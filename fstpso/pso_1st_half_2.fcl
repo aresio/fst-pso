@@ -1,0 +1,15 @@
+FUNCTION_BLOCK dummy
+
+	VAR_INPUT 
+		Distance:	REAL;
+		Derivative: REAL;
+	END_VAR
+
+	VAR_OUTPUT
+		Inertia: 	REAL;
+		Social:		REAL;
+		Cognitive:	REAL;
+		Maxspeed: 	REAL;
+		Sigma: 	 	REAL;
+	END_VAR
+

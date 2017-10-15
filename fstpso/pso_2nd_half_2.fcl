@@ -1,0 +1,87 @@
+
+
+	DEFUZZIFY Inertia
+		TERM Low  := 0.3;		
+		TERM Medium := 0.5;
+		TERM High := 1.0;
+		ACCU: MAX;
+		METHOD: COGS;
+	END_DEFUZZIFY
+
+	DEFUZZIFY Social	
+		TERM Low  := 1.0;		
+		TERM Medium := 2.0;
+		TERM High := 3.0;
+		ACCU: MAX;
+		METHOD: COGS;
+	END_DEFUZZIFY
+
+	DEFUZZIFY Cognitive		
+		TERM Low  := 0.1;		
+		TERM Medium := 1.5;
+		TERM High := 3.0;		
+		ACCU: MAX;
+		METHOD: COGS;
+	END_DEFUZZIFY
+
+	DEFUZZIFY Maxspeed
+		TERM Low  := 0.1;		
+		TERM Medium := 0.15;
+		TERM High := 0.2;
+		ACCU: MAX;
+		METHOD: COGS;
+	END_DEFUZZIFY
+
+	DEFUZZIFY Sigma
+		TERM Low  := 0;		
+		TERM Medium := 0.001;
+		TERM High := 0.01;
+		ACCU: MAX;
+		METHOD: COGS;
+	END_DEFUZZIFY
+
+	RULEBLOCK first
+
+		RULE 1:  IF (Derivative IS Worse) THEN (Inertia IS Low);
+		RULE 2:  IF (Derivative IS Worse) THEN (Social IS High);
+		RULE 3:  IF (Derivative IS Worse) THEN (Cognitive IS Medium);
+		RULE 4:  IF (Derivative IS Worse) THEN (Sigma IS High);
+		RULE 5:  IF (Derivative IS Worse) THEN (Maxspeed IS High);
+
+
+		RULE 6:  IF (Derivative IS Same) THEN (Inertia IS Medium);
+		RULE 7:  IF (Derivative IS Same) THEN (Social IS Medium);
+		RULE 8:  IF (Derivative IS Same) THEN (Cognitive IS Medium);
+		RULE 9:  IF (Derivative IS Same) THEN (Sigma IS Low);
+		RULE 10: IF (Derivative IS Same) THEN (Maxspeed IS Medium);
+
+
+		RULE 11: IF (Derivative IS Better) THEN (Inertia IS High);
+		RULE 12: IF (Derivative IS Better) THEN (Social IS Low);
+		RULE 13: IF (Derivative IS Better) THEN (Cognitive IS High);
+		RULE 14: IF (Derivative IS Better) THEN (Sigma IS Low);
+		RULE 15: IF (Derivative IS Better) THEN (Maxspeed IS Medium);
+
+		RULE 16: IF (Distance IS Same) THEN (Inertia IS Low);
+		RULE 17: IF (Distance IS Same) THEN (Social IS Medium);
+		RULE 18: IF (Distance IS Same) THEN (Cognitive IS Medium);
+		RULE 19: IF (Distance IS Same) THEN (Sigma IS Medium);
+		RULE 20: IF (Distance IS Same) THEN (Maxspeed IS Low);		
+
+		RULE 21: IF (Distance IS Near) THEN (Inertia IS Medium);
+		RULE 22: IF (Distance IS Near) THEN (Social IS Low);
+		RULE 23: IF (Distance IS Near) THEN (Cognitive IS Medium);
+		RULE 24: IF (Distance IS Near) THEN (Sigma IS Medium);
+		RULE 25: IF (Distance IS Near) THEN (Maxspeed IS Medium);
+		
+		RULE 26: IF (Distance IS Far) THEN (Inertia IS High);
+		RULE 27: IF (Distance IS Far) THEN (Social IS High);		
+		RULE 28: IF (Distance IS Far) THEN (Cognitive IS Low);
+		RULE 29: IF (Distance IS Far) THEN (Sigma IS Low);
+		RULE 30: IF (Distance IS Far) THEN (Maxspeed IS High);
+	
+
+
+	END_RULEBLOCK
+
+END_FUNCTION_BLOCK
