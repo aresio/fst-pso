@@ -24,7 +24,7 @@ FST-PSO can be used as follows:
 		FP = FuzzyPSO()
 		FP.set_search_space( [[-10, 10]]*dims )	
 		FP.set_fitness(example_fitness)
-		result =  FP.solve_with_fstpso(max_iter=100)
+		result =  FP.solve_with_fstpso()
 		print "Best solution:", result[0]
 		print "Whose fitness is:", result[1]
 
