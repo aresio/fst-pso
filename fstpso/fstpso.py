@@ -80,6 +80,20 @@ class FuzzyPSO(pso.PSO_new):
 		print " * Number of particles automatically set to", self.numberofparticles
 
 
+	def set_swarm_size(self, N):
+		try:
+			N=int(N)
+		except:
+			print "ERROR: please specify the swarm size as an integer number"
+			exit(-6)
+
+		if N<=1:
+			print "ERROR: FST-PSO cannot work with less than 1 particles, aborting"
+			exit(-5)
+		else:
+			self.numberofparticles = N
+			print " * Swarm size now set to %d particles" % (self.numberofparticles)
+
 
 	def set_fitness(self, fitness):			
 		try:
@@ -94,8 +108,7 @@ class FuzzyPSO(pso.PSO_new):
 	def set_parallel_fitness(self, fitness):
 		np = pso.Particle()
 		np.X = [0]*self.dimensions
-
-		fitness([np]*self.numberofparticles)
+		fitness([np.X]*self.numberofparticles)
 		self.FITNESS = fitness
 		self.ParallelFitness = True
 
@@ -186,8 +199,9 @@ class FuzzyPSO(pso.PSO_new):
 		"""
 
 		if self.ParallelFitness:
-			print " * Distributing calculations..."
-			all_fitness = self.FITNESS(self.Solutions)
+			#print " * Distributing calculations..."
+			ripop = map(lambda x: x.X, self.Solutions)
+			all_fitness = self.FITNESS(ripop)
 		else:
 			all_fitness = []
 			for s in self.Solutions:
