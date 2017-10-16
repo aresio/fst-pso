@@ -380,7 +380,7 @@ class PSO_new(object):
 				
 		
 	# update local bests
-	def UpdateLocalBest(self, verbose=False, semiverbose=False):		
+	def UpdateLocalBest(self, verbose=False, semiverbose=True):		
 
 		if verbose:
 			print "Starting verification of local best"

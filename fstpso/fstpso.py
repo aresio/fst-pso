@@ -33,7 +33,7 @@ class FuzzyPSO(pso.PSO_new):
 		self.enabled_settings = ["cognitive", "social", "inertia", "minvelocity", "maxvelocity"]
 
 
-	def solve_with_fstpso(self, max_iter=100, use_log=False, verbose=False):
+	def solve_with_fstpso(self, max_iter=100, creation_method={'name':"uniform"}, verbose=False):
 		"""
 			Launches the optimization using FST-PSO. Internally, this method checks
 			that we correctly set the pointer to the fitness function and the
@@ -60,7 +60,7 @@ class FuzzyPSO(pso.PSO_new):
 		print " * Max iterations set to", self.MaxIterations
 		print " * Launching optimization"
 
-		self.CreateParticles(self.numberofparticles, self.dimensions, use_log=use_log)
+		self.NewCreateParticles(self.numberofparticles, self.dimensions, creation_method=creation_method)
 		result = self.Solve(None, verbose=verbose)
 		return result
 
@@ -95,17 +95,29 @@ class FuzzyPSO(pso.PSO_new):
 			print " * Swarm size now set to %d particles" % (self.numberofparticles)
 
 
-	def set_fitness(self, fitness):			
-		try:
-			fitness([0]*self.dimensions)
+	def set_fitness(self, fitness, skip_test=False):			
+		if skip_test:
 			self.FITNESS = fitness
 			self.ParallelFitness = False
+			return 
+
+		try:
+			print " * Testing fitness evaluation"
+			fitness([1e-10]*self.dimensions)
+			self.FITNESS = fitness
+			self.ParallelFitness = False
+			print " * Test successful"
 		except:
 			print "ERROR: the specified function does not seem to implement a correct fitness function"
 			exit(-2)
 
 
-	def set_parallel_fitness(self, fitness):
+	def set_parallel_fitness(self, fitness, skip_test=False):
+		if skip_test:
+			self.FITNESS = fitness
+			self.ParallelFitness = True
+			return 
+
 		np = pso.Particle()
 		np.X = [0]*self.dimensions
 		fitness([np.X]*self.numberofparticles)
