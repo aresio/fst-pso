@@ -9,3 +9,4 @@ v1.1.14, 12/09/2017 -- Improving code readibility by following PEP8 and docstrin
 v1.1.15, 13/09/2017 -- Automatic removal of temporary FCL file.
 v1.2.0, 15/10/2017 -- Simplified interface (empty constructor), improved automatic test of fitness functions
 v1.2.2, 16/10/2017 -- Simplified interface for distributed fitness evaluations
+v1.3.0, 16/10/2017 -- Introduced support for non-uniform initialization of particles
