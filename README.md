@@ -1,6 +1,4 @@
-=====================
-Fuzzy Self-Tuning PSO
-=====================
+# FST-PSO
 
 *Fuzzy Self-Tuning PSO* (FST-PSO) is a swarm intelligence global optimization method [1]
 based on Particle Swarm Optimization [2].
@@ -9,44 +7,37 @@ FST-PSO is designed for the optimization of real-valued multi-dimensional multi-
 
 FST-PSO is settings-free version of PSO which exploits fuzzy logic to dynamically assign the functioning parameters to each particle in the swarm. Specifically, during each generation, FST-PSO is determines the optimal choice for the cognitive factor, the social factor, the inertia value, the minimum velocity, and the maximum velocity. FST-PSO also uses an heuristics to choose the swarm size, so that the user must not select any functioning setting.
 
-In order to use FST-PSO, the programmer must implement a custom fitness function. Moreover, the programmer must specify the number of dimensions of the problem and the boundaries of the search space for each dimension. The programmer can optionally specify the maximum number of iterations. When the stopping criterion is met, FST-PSO returns the best fitting solution found, along with its fitness value.
+In order to use FST-PSO, the programmer must implement a custom fitness function and specify the boundaries of the search space for each dimension. The programmer can optionally specify the maximum number of iterations. When the stopping criterion is met, FST-PSO returns the best fitting solution found, along with its fitness value.
 
 
-Example
-=======
+## Example
+
 FST-PSO can be used as follows:
 
-from fstpso import FuzzyPSO	
-
-def example_fitness( particle ):
-
-	return sum(map(lambda x: x**2, particle))
-
-if __name__ == '__main__':
+	from fstpso import FuzzyPSO	
 	
-	dims = 10
-
-	FP = FuzzyPSO( D=dims )
-
-	FP.set_fitness(example_fitness)
-
-	FP.set_search_space( [[-10, 10]]*dims )	
-
-	result =  FP.solve_with_fstpso(max_iter=100)
-
-	print "Best solution:", result[0]
-	
-	print "Whose fitness is:", result[1]
+	def example_fitness( particle ):
+		return sum(map(lambda x: x**2, particle))
+		
+	if __name__ == '__main__':
+		dims = 10
+		FP = FuzzyPSO()
+		FP.set_search_space( [[-10, 10]]*dims )	
+		FP.set_fitness(example_fitness)
+		result =  FP.solve_with_fstpso()
+		print "Best solution:", result[0]
+		print "Whose fitness is:", result[1]
 
 
-
-
-Further information
--------------------
+## Further information
 
 FST-PSO has been created by M.S. Nobile, D. Besozzi, G. Pasi, G. Mauri, 
 R. Colombo (University of Milan-Bicocca, Italy), and P. Cazzaniga (University
 of Bergamo, Italy). The source code was written by M.S. Nobile.
+
+Please check out the Wiki for additional descriptions. 
+
+If you need any information about FST-PSO please write to: nobile@disco.unimib.it
 
 FST-PSO requires two packages: pyfuzzy and numpy. 
 
