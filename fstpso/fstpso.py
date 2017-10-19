@@ -28,8 +28,6 @@ class FuzzyPSO(pso.PSO_new):
 
 		super(FuzzyPSO, self).__init__()
 
-		if not is_antlr_present():
-
 		# defaults for membership functions
 		self.DER1 = -1.0
 		self.DER2 =  1.0
