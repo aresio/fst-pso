@@ -1,6 +1,13 @@
 import math
 import pso
-import fuzzy.storage.fcl.Reader
+try:
+	import fuzzy.storage.fcl.Reader
+except:
+	print "ERROR: The ANTLR3 python runtime was not detected; pyfuzzy cannot import FST-PSO's FLC files."
+	print "       Please download and install ANTLR3 runtime from the following URL:"
+	print "       https://github.com/antlr/antlr3/tree/master/runtime/Python"
+	exit(667)
+
 from surfaces import *
 from numpy import random, array
 from numpy import linalg
@@ -19,7 +26,9 @@ class FuzzyPSO(pso.PSO_new):
 			D: number of dimensions of the problem under optimization
 		"""
 
-		super(FuzzyPSO, self).__init__()		
+		super(FuzzyPSO, self).__init__()
+
+		if not is_antlr_present():
 
 		# defaults for membership functions
 		self.DER1 = -1.0

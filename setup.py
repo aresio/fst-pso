@@ -2,7 +2,7 @@ from distutils.core import setup
 setup(
   name = 'fst-pso',
   packages = ['fstpso'], # this must be the same as the name above
-  version = '1.3.0',
+  version = '1.3.1',
   description = 'Fuzzy Self-Tuning PSO global optimization library',
   author = 'Marco S. Nobile',
   author_email = 'nobile@disco.unimib.it',
