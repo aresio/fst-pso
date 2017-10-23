@@ -6,9 +6,9 @@ def example_fitness( particle ):
 if __name__ == '__main__':
 	
 	dims = 10
-	FP = FuzzyPSO( D=dims )
-	FP.set_fitness(example_fitness)
+	FP = FuzzyPSO()
 	FP.set_search_space( [[-10, 10]]*dims )	
+	FP.set_fitness(example_fitness)	
 	result =  FP.solve_with_fstpso(max_iter=100)
 	print "Best solution:", result[0]
 	print "Whose fitness is:", result[1]
