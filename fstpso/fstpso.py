@@ -80,7 +80,7 @@ class FuzzyPSO(pso.PSO_new):
 		self.Boundaries = limits		
 		print " * Search space boundaries set to:", limits
 
-		self.MaxVelocity = [math.fabs(limits[0][1]-limits[0][0])]*self.dimensions
+		self.MaxVelocity = [  math.fabs(B[1]-B[0]) for B in limits ]
 		print " * Max velocities set to:", self.MaxVelocity
 
 		self.numberofparticles = int(10 + 2*math.sqrt(D))
