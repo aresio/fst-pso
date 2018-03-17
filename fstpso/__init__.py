@@ -1,1 +1,1 @@
-from fstpso import FuzzyPSO
+from .fstpso import FuzzyPSO

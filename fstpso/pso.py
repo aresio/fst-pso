@@ -1,3 +1,4 @@
+from __future__ import print_function
 import math
 import random
 from numpy.random import lognormal
@@ -19,7 +20,7 @@ class Particle(object):
 		self.FitnessDevStandard = sys.float_info.max
 		self.CalculatedBestFitness = sys.float_info.max
 		self.SinceLastLocalUpdate = 0
-		
+
 		self.DerivativeFitness = 0
 		self.MagnitudeMovement = 0
 		self.DistanceFromBest = sys.float_info.max
@@ -30,7 +31,7 @@ class Particle(object):
 		# support for PPSO
 		self.MaxSpeedMultiplier = .25
 		self.MinSpeedMultiplier = 0
-		
+
 	def __repr__(self):
 		return "<Particle %s>" % str(self.X)
 
@@ -62,8 +63,8 @@ class PSO_new(object):
 		self.UseRestart = False
 		self.UseLog = False
 		self.ProximityThreshold = 1E-1
-		self.MaxIterations = sys.maxint
-		self.MaxNoUpdateIterations = sys.maxint
+		self.MaxIterations = sys.maxsize
+		self.MaxNoUpdateIterations = sys.maxsize
 		self.GoodFitness = -sys.float_info.max
 		self.Iterations = 0
 		self.SinceLastGlobalUpdate = 0
@@ -115,7 +116,7 @@ class PSO_new(object):
 		self.UpdateCalculatedFitness()
 		self.UpdateLocalBest(verbose)
 		self.Iterations = self.Iterations + 1
-		self.SinceLastGlobalUpdate = self.SinceLastGlobalUpdate + 1 
+		self.SinceLastGlobalUpdate = self.SinceLastGlobalUpdate + 1
 		self.UpdateInertia()
 
 
@@ -123,44 +124,44 @@ class PSO_new(object):
 
 		self.Iterations = 0
 		if verbose:
-			print "Process started"
+			print("Process started")
 		while( not self.TerminationCriterion(verbose=verbose) ):
 			if funz!=None:	funz(self)
 			self.Iterate(verbose)
 			if verbose:
-				print "Completed PSO iteration", self.Iterations-1			
+				print("Completed PSO iteration", self.Iterations-1)
 		if verbose:
-			print "Process terminated, best position:", self.G.X, "with fitness",self.G.CalculatedFitness
+			print("Process terminated, best position:", self.G.X, "with fitness",self.G.CalculatedFitness)
 		return self.G, self.G.CalculatedFitness
-		
+
 
 	def TerminationCriterion(self, verbose=False):
 
 		if verbose:
-			print "Iteration:", self.Iterations, 
-			print ", since last global update:", self.SinceLastGlobalUpdate 
+			print("Iteration:", self.Iterations, end=' ')
+			print(", since last global update:", self.SinceLastGlobalUpdate)
 
 		if self.StopOnGoodFitness == True:
 			if self.G.CalculatedFitness < self.GoodFitness:
 				if verbose:
-					print "Good fitness reached!", self.G.CalculatedFitness
+					print("Good fitness reached!", self.G.CalculatedFitness)
 				return True
 
 		if self.SinceLastGlobalUpdate > self.MaxNoUpdateIterations:
 			if verbose:
-				print "Too many iterations without new global best"
+				print("Too many iterations without new global best")
 			return True
-		
+
 		if self.Iterations > self.MaxIterations:
 			if verbose:
-				print "Maximum iterations reached"
+				print("Maximum iterations reached")
 			return True
 		else:
 			return False
 
 
 	# def Generate(self, lista): return self.Boundaries[0] + (self.Boundaries[1]-self.Boundaries[0]) * random.random()
-	def Generate(self, lista, use_log=True, verbose=False): 
+	def Generate(self, lista, use_log=True, verbose=False):
 
 		ret = []
 		if use_log:
@@ -173,21 +174,21 @@ class PSO_new(object):
 				ret.append( self.Boundaries[i][0] + (self.Boundaries[i][1]-self.Boundaries[i][0]) * random.random() )
 
 		if verbose:
-			print "Particle generated"
-			print ret
+			print("Particle generated")
+			print(ret)
 		return ret
 
 
 	def set_number_of_particles(self, n):
 		self.NumberOfParticles = n
-		print "Number of particles set to", n
+		print("Number of particles set to", n)
 
 	def auto_create_particles(self, dim, use_log):
 		if self.NumberOfParticles == 0:
-			print "ERROR: it is impossible to autocreate 0 particles"
+			print("ERROR: it is impossible to autocreate 0 particles")
 			return
 		self.CreateParticles(self.NumberOfParticles, dim, use_log)
-		print self.NumberOfParticles, "particles autocreated"
+		print(self.NumberOfParticles, "particles autocreated")
 
 
 
@@ -209,7 +210,7 @@ class PSO_new(object):
 					if random.random() > .5:
 						res *= -1
 					ret.append(res)
-				else:					
+				else:
 					minimo = math.log(self.Boundaries[i][0])
 					massimo = math.log(self.Boundaries[i][1])
 					ret.append(math.exp(minimo+(massimo-minimo)*random.random()))
@@ -220,7 +221,7 @@ class PSO_new(object):
 					if self.Boundaries[i][1]==self.Boundaries[i][0]: 
 						ret.append( self.Boundaries[i][1] )
 						break
-					cand_position = random.gauss( (self.Boundaries[i][1]+self.Boundaries[i][0])/2,  creation_method['sigma'] )					
+					cand_position = random.gauss( (self.Boundaries[i][1]+self.Boundaries[i][0])/2,  creation_method['sigma'] )
 					if (cand_position>=self.Boundaries[i][0] and cand_position<=self.Boundaries[i][1]):
 						ret.append(cand_position)
 						break
@@ -240,7 +241,7 @@ class PSO_new(object):
 				ret.append(v)
 
 		else:
-			print "Unknown particles initialization mode"
+			print("Unknown particles initialization mode")
 
 		return ret
 
@@ -250,17 +251,17 @@ class PSO_new(object):
 
 		del self.Solutions [:]
 
-		for i in xrange(n):
+		for i in range(n):
 
-			p = Particle()		
-		
+			p = Particle()
+
 			# p.X = map( self.Generate, [0]*dim )
 			p.X = self.NewGenerate( [0]*dim, creation_method = creation_method )
 			p.B = copy.deepcopy(p.X)
 			p.V = list(zeros(dim))
 
 			self.Solutions.append(p)
-			
+
 			if len(self.Solutions)==1:
 				self.G = copy.deepcopy(p)
 				# self.G.CalculatedFitness = self.FITNESS(self.G.X)
@@ -269,7 +270,7 @@ class PSO_new(object):
 				self.W.CalculatedFitness = sys.float_info.min
 
 
-		print " *", n, "particles created, verifying local and global best"
+		print(" *", n, "particles created, verifying local and global best")
 
 
 		self.NumberOfParticles = n
@@ -283,7 +284,7 @@ class PSO_new(object):
 
 		self.UpdateLocalBest()
 
-		self.UpdatePositions()	
+		self.UpdatePositions()
 
 		self.Dimensions = dim
 
@@ -295,23 +296,23 @@ class PSO_new(object):
 		self.UseLog = use_log
 
 		if self.FITNESS == None:
-			print "ERROR: particles must be created AFTER the definition of the fitness function"
+			print("ERROR: particles must be created AFTER the definition of the fitness function")
 			exit()
 
 		del self.Solutions [:]
 
 		# for all particles
-		for i in xrange(n):
+		for i in range(n):
 
 			p = Particle()
-		
+
 			# p.X = map( self.Generate, [0]*dim )
 			p.X = self.Generate( [0]*dim, use_log = use_log )
 			p.B = copy.deepcopy(p.X)
 			p.V = list(zeros(dim))
 
 			self.Solutions.append(p)
-			
+
 			if len(self.Solutions)==1:
 				self.G = copy.deepcopy(p)
 				# self.G.CalculatedFitness = self.FITNESS(self.G.X)
@@ -319,7 +320,7 @@ class PSO_new(object):
 				self.W = copy.deepcopy(p)
 				self.W.CalculatedFitness = sys.float_info.min
 
-		print " *", n, "particles created, verifying local and global best"
+		print(" *", n, "particles created, verifying local and global best")
 
 		self.NumberOfParticles = n
 
@@ -348,7 +349,7 @@ class PSO_new(object):
 
 		risultato = subprocess.check_output(fullcall)
 		risultato = map(float, risultato.split())
-		
+
 		for n, s in enumerate(self.Solutions):
 			prev = s.CalculatedFitness
 			# ret = self.FITNESS(s.X)
@@ -362,7 +363,7 @@ class PSO_new(object):
 				s.CalculatedFitness = ret
 			# print prev, ret, s.DerivativeFitness
 	"""
-		
+
 
 	def UpdateCalculatedFitness(self):
 		for s in self.Solutions:
@@ -377,33 +378,33 @@ class PSO_new(object):
 				s.CalculatedFitness = ret
 			# print prev, ret, s.DerivativeFitness
 
-				
-		
+
+
 	# update local bests
-	def UpdateLocalBest(self, verbose=False, semiverbose=True):		
+	def UpdateLocalBest(self, verbose=False, semiverbose=True):
 
 		if verbose:
-			print "Starting verification of local best"
-		for i in xrange(len(self.Solutions)):			
+			print("Starting verification of local best")
+		for i in range(len(self.Solutions)):
 			if verbose:
-				print " Solution",i,":", self.Solutions[i]
+				print(" Solution",i,":", self.Solutions[i])
 			if self.Solutions[i].CalculatedFitness < self.Solutions[i].CalculatedBestFitness:
 				self.Solutions[i].SinceLastLocalUpdate = 0
 				if verbose:
-					print "new best for ", i, " has fitness", self.Solutions[i].CalculatedFitness 
+					print("new best for ", i, " has fitness", self.Solutions[i].CalculatedFitness)
 
 				self.Solutions[i].B = copy.deepcopy(self.Solutions[i].X)
 				self.Solutions[i].CalculatedBestFitness = self.Solutions[i].CalculatedFitness
 				if self.Solutions[i].CalculatedFitness < self.G.CalculatedFitness:
 					self.G = copy.deepcopy(self.Solutions[i])
 					if verbose or semiverbose:
-						print "new global best", i, "has fitness", self.Solutions[i].CalculatedFitness
+						print("new global best", i, "has fitness", self.Solutions[i].CalculatedFitness)
 
-					self.SinceLastGlobalUpdate = 0			
+					self.SinceLastGlobalUpdate = 0
 					self.GIndex = i
 			else:
 				if verbose:
-					print " Fitness calcolata:", self.Solutions[i].CalculatedFitness, "old best", self.Solutions[i].CalculatedBestFitness
+					print(" Fitness calcolata:", self.Solutions[i].CalculatedFitness, "old best", self.Solutions[i].CalculatedBestFitness)
 				self.Solutions[i].SinceLastLocalUpdate += 1
 
 				# update global worst
@@ -420,7 +421,7 @@ class PSO_new(object):
 	# update particles' positions
 	def UpdatePositions(self, constrained_damping = False):
 
-		for p in self.Solutions:	
+		for p in self.Solutions:
 
 			if self.UseRestart:
 				if p.MarkedForRestart:
@@ -432,8 +433,8 @@ class PSO_new(object):
 
 			prev_pos = p.X[:]
 
-			for n in xrange(len(p.X)):			
-				
+			for n in range(len(p.X)):
+
 				c1 = p.X[n]
 				c2 = p.V[n]
 				tv = c1+c2
@@ -443,14 +444,14 @@ class PSO_new(object):
 						rnd1 = random.random()
 						tv = self.Boundaries[n][1] - rnd1 * c2
 					else:
-						print "WARNING: constrained damping not implemented"
+						print("WARNING: constrained damping not implemented")
 
 				if tv < self.Boundaries[n][0]:
 					if not constrained_damping:
 						rnd2 = random.random()
 						tv = self.Boundaries[n][0] - rnd2 * c2
 					else:
-						print "WARNING: constrained damping not implemented"
+						print("WARNING: constrained damping not implemented")
 
 				p.X[n] = tv
 
@@ -466,11 +467,11 @@ class PSO_new(object):
 				if self.getBestIndex != numpart:
 					distance_from_global_best = linalg.norm( array(self.G.X) - array(p.X) )
 					if distance_from_global_best<self.ProximityThreshold:
-						if self.Iterations>0:	
-							print " * Particle", numpart, "marked for restart"
+						if self.Iterations>0:
+							print(" * Particle", numpart, "marked for restart")
 							p.MarkedForRestart = True
 
-			for n in xrange(len(p.X)):		
+			for n in range(len(p.X)):
 
 				fattore1 = self.Inertia * p.V[n]
 				fattore2 = random.random() * self.CognitiveFactor * (p.B[n] - p.X[n])

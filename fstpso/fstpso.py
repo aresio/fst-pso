@@ -1,14 +1,15 @@
+from __future__ import print_function
 import math
-import pso
+from . import pso
 try:
 	import fuzzy.storage.fcl.Reader
 except:
-	print "ERROR: The ANTLR3 python runtime was not detected; pyfuzzy cannot import FST-PSO's FLC files."
-	print "       Please download and install ANTLR3 runtime from the following URL:"
-	print "       https://github.com/antlr/antlr3/tree/master/runtime/Python"
+	print("ERROR: The ANTLR3 python runtime was not detected; pyfuzzy cannot import FST-PSO's FLC files.")
+	print("       Please download and install ANTLR3 runtime from the following URL:")
+	print("       https://github.com/antlr/antlr3/tree/master/runtime/Python")
 	exit(667)
 
-from surfaces import *
+from .surfaces import *
 from numpy import random, array
 from numpy import linalg
 import pkg_resources
@@ -31,9 +32,9 @@ class FuzzyPSO(pso.PSO_new):
 		# defaults for membership functions
 		self.DER1 = -1.0
 		self.DER2 =  1.0
-		self.MDP1 = 0.2 
-		self.MDP2 = 0.4 
-		self.MDP3 = 0.6 
+		self.MDP1 = 0.2
+		self.MDP2 = 0.4
+		self.MDP3 = 0.6
 		self.MaxDistance = 0
 		self.dimensions = 0
 
@@ -56,16 +57,16 @@ class FuzzyPSO(pso.PSO_new):
 		"""
 
 		if self.FITNESS is None:
-			print "ERROR: cannot solve a problem without a fitness function; use set_fitness()"
+			print("ERROR: cannot solve a problem without a fitness function; use set_fitness()")
 			exit(-3)
 
 		if self.Boundaries == []:
-			print "ERROR: FST-PSO cannot solve unbounded problems; use set_search_space()"
+			print("ERROR: FST-PSO cannot solve unbounded problems; use set_search_space()")
 			exit(-4)
 
 		self.MaxIterations = max_iter
-		print " * Max iterations set to", self.MaxIterations
-		print " * Launching optimization"
+		print(" * Max iterations set to", self.MaxIterations)
+		print(" * Launching optimization")
 
 		self.NewCreateParticles(self.numberofparticles, self.dimensions, creation_method=creation_method)
 		result = self.Solve(None, verbose=verbose)
@@ -77,45 +78,45 @@ class FuzzyPSO(pso.PSO_new):
 		self.dimensions = D
 
 		self.__generate_FCL(max_distance=calculate_max_distance(limits))
-		self.Boundaries = limits		
-		print " * Search space boundaries set to:", limits
+		self.Boundaries = limits
+		print(" * Search space boundaries set to:", limits)
 
 		self.MaxVelocity = [  math.fabs(B[1]-B[0]) for B in limits ]
-		print " * Max velocities set to:", self.MaxVelocity
+		print(" * Max velocities set to:", self.MaxVelocity)
 
 		self.numberofparticles = int(10 + 2*math.sqrt(D))
-		print " * Number of particles automatically set to", self.numberofparticles
+		print(" * Number of particles automatically set to", self.numberofparticles)
 
 
 	def set_swarm_size(self, N):
 		try:
 			N=int(N)
 		except:
-			print "ERROR: please specify the swarm size as an integer number"
+			print("ERROR: please specify the swarm size as an integer number")
 			exit(-6)
 
 		if N<=1:
-			print "ERROR: FST-PSO cannot work with less than 1 particles, aborting"
+			print("ERROR: FST-PSO cannot work with less than 1 particles, aborting")
 			exit(-5)
 		else:
 			self.numberofparticles = N
-			print " * Swarm size now set to %d particles" % (self.numberofparticles)
+			print(" * Swarm size now set to %d particles" % (self.numberofparticles))
 
 
-	def set_fitness(self, fitness, skip_test=False):			
+	def set_fitness(self, fitness, skip_test=False):
 		if skip_test:
 			self.FITNESS = fitness
 			self.ParallelFitness = False
-			return 
+			return
 
 		try:
-			print " * Testing fitness evaluation"
+			print(" * Testing fitness evaluation")
 			fitness([1e-10]*self.dimensions)
 			self.FITNESS = fitness
 			self.ParallelFitness = False
-			print " * Test successful"
+			print(" * Test successful")
 		except:
-			print "ERROR: the specified function does not seem to implement a correct fitness function"
+			print("ERROR: the specified function does not seem to implement a correct fitness function")
 			exit(-2)
 
 
@@ -123,7 +124,7 @@ class FuzzyPSO(pso.PSO_new):
 		if skip_test:
 			self.FITNESS = fitness
 			self.ParallelFitness = True
-			return 
+			return
 
 		np = pso.Particle()
 		np.X = [0]*self.dimensions
@@ -133,13 +134,13 @@ class FuzzyPSO(pso.PSO_new):
 
 
 		"""
-		try: 
+		try:
 			fitness([np]*self.numberofparticles)
 			self.FITNESS = fitness
 			self.ParallelFitness = True
 		except:
 			print "ERROR: the specified function does not seem to implement a correct parallel fitness function"
-			exit(-3)	
+			exit(-3)
 		"""
 
 	def __generate_FCL(self, max_distance=100.):
@@ -155,11 +156,11 @@ class FuzzyPSO(pso.PSO_new):
 
 		pkg_path = pkg_resources.resource_filename('fstpso', "")
 
-		fo = NamedTemporaryFile(delete=False)
+		fo = NamedTemporaryFile(delete=False,mode='w')
 		temp_file_name = fo.name
 
-		# with open(pkg_path+"\\pso_generated.fcl", "w") as fo:		
-		with open(pkg_path+os.sep+"pso_1st_half_2.fcl") as fi:
+		# with open(pkg_path+"\\pso_generated.fcl", "w") as fo:
+		with open(pkg_path+os.sep+"pso_1st_half_2.fcl",'r') as fi:
 			doc = fi.read()
 			fo.write(doc)
 
@@ -173,41 +174,41 @@ class FuzzyPSO(pso.PSO_new):
 		fo.write("\tTERM Far  := ("+str(p2)+",0) ("+str(p3)+",1) ("+str(max_distance)+",1) ("+str(max_distance)+",0);\n")
 		fo.write("END_FUZZIFY\n\n")
 
-		# new derivative			
+		# new derivative
 		fo.write("FUZZIFY Derivative\n")
 		fo.write("\tTERM Worse :=   ( 0,0) (1,1)   (1,0);\n")
 		fo.write("\tTERM Same :=    ("+str(self.DER1)+",0) (0,1)   ("+str(self.DER2)+",0);\n")
 		fo.write("\tTERM Better  := (-1.0,0)   (-1,1)  (0,0);\n")
 		fo.write("END_FUZZIFY\n\n")
-		
+
 		with open(pkg_path+os.sep+"pso_2nd_half_2.fcl") as fi:
-			doc = fi.readlines()					
+			doc = fi.readlines()
 			fo.write("\n".join(doc))
 
 		fo.close()
-			
+
 		self.init_fuzzy(temp_file_name)
 		os.remove(temp_file_name) # clean up
 
 
 	def init_fuzzy(self, path="pso.fcl"):
 		"""
-			Initialize the fuzzy systems according to FST-PSO and problem's settings. 
+			Initialize the fuzzy systems according to FST-PSO and problem's settings.
 		"""
 
-		self.fuzzySystem = fuzzy.storage.fcl.Reader.Reader().load_from_file(path)		
-		print " * Fuzzy subsystem initialized"
+		self.fuzzySystem = fuzzy.storage.fcl.Reader.Reader().load_from_file(path)
+		print(" * Fuzzy subsystem initialized")
 
 
 	def phi(self, f_w, f_o, f_n, phi, phi_max):
-		""" 
+		"""
 			Calculates the Fitness Incremental Factor (phi).
 		"""
 
 		if phi == 0:
 			return 0
 		denom = (min(f_w, f_n) - min(f_w, f_o))/f_w			# 0..1
-		numer = phi/phi_max									# 0..1		
+		numer = phi/phi_max									# 0..1
 		return denom*numer
 
 
@@ -219,7 +220,7 @@ class FuzzyPSO(pso.PSO_new):
 
 		if self.ParallelFitness:
 			#print " * Distributing calculations..."
-			ripop = map(lambda x: x.X, self.Solutions)
+			ripop = [x.X for x in self.Solutions]
 			all_fitness = self.FITNESS(ripop)
 		else:
 			all_fitness = []
@@ -249,7 +250,7 @@ class FuzzyPSO(pso.PSO_new):
 			try:
 				my_output = sugeno_inference(my_input, self.fuzzySystem, verbose=False)
 			except:
-				print my_input
+				print(my_input)
 				exit(-100)
 
 			if "cognitive" in self.enabled_settings: 	s.CognitiveFactor = my_output["Cognitive"]
@@ -264,11 +265,11 @@ class FuzzyPSO(pso.PSO_new):
 			Update particles' positions and update the internal information.
 		"""
 
-		for p in self.Solutions:	
+		for p in self.Solutions:
 
 			prev_pos = p.X[:]
 
-			for n in range(len(p.X)):							
+			for n in range(len(p.X)):
 				c1 = p.X[n]
 				c2 = p.V[n]
 				tv = c1+c2
@@ -303,9 +304,9 @@ class FuzzyPSO(pso.PSO_new):
 
 				# check max vel
 				if newvelocity > self.MaxVelocity[n] * p.MaxSpeedMultiplier:
-					newvelocity = self.MaxVelocity[n] * p.MaxSpeedMultiplier 
+					newvelocity = self.MaxVelocity[n] * p.MaxSpeedMultiplier
 				elif newvelocity < -self.MaxVelocity[n] * p.MaxSpeedMultiplier:
-					newvelocity = -self.MaxVelocity[n] * p.MaxSpeedMultiplier 
+					newvelocity = -self.MaxVelocity[n] * p.MaxSpeedMultiplier
 
 				# check min vel
 				if abs(newvelocity) < self.MaxVelocity[n] * p.MinSpeedMultiplier:
@@ -323,5 +324,5 @@ def calculate_max_distance(interval):
 
 
 if __name__ == '__main__':
-	
-	print "ERROR: please create a new FuzzyPSO object, specify a fitness function and the search space"
+
+	print("ERROR: please create a new FuzzyPSO object, specify a fitness function and the search space")
