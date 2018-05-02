@@ -7,7 +7,7 @@ FST-PSO is designed for the optimization of real-valued multi-dimensional multi-
 
 FST-PSO is settings-free version of PSO which exploits fuzzy logic to dynamically assign the functioning parameters to each particle in the swarm. Specifically, during each generation, FST-PSO determines the optimal choice for the cognitive factor, the social factor, the inertia value, the minimum velocity, and the maximum velocity. FST-PSO also uses an heuristics to choose the swarm size, so that the user must not select any functioning setting.
 
-In order to use FST-PSO, the programmer must implement a custom fitness function and specify the boundaries of the search space for each dimension. The programmer can optionally specify the maximum number of iterations. When the stopping criterion is met, FST-PSO returns the best fitting solution found, along with its fitness value.
+In order to use FST-PSO, the programmer must implement a custom fitness function and specify the boundaries of the search space for each dimension. The programmer can optionally specify the maximum number of iterations and the swarm size. When the stopping criterion is met, FST-PSO returns the best fitting solution found, along with its fitness value.
 
 
 ## Example
