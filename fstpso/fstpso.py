@@ -1,5 +1,6 @@
 import math
 import pso
+"""
 try:
 	import fuzzy.storage.fcl.Reader
 except:
@@ -7,13 +8,16 @@ except:
 	print "       Please download and install ANTLR3 runtime from the following URL:"
 	print "       https://github.com/antlr/antlr3/tree/master/runtime/Python"
 	exit(667)
-
-from surfaces import *
+"""
+#from surfaces import *
 from numpy import random, array
 from numpy import linalg
-import pkg_resources
-from tempfile import NamedTemporaryFile
+#import pkg_resources
+#from tempfile import NamedTemporaryFile
 import os
+
+# testing new library
+from miniful import *
 
 
 class FuzzyPSO(pso.PSO_new):
@@ -194,9 +198,10 @@ class FuzzyPSO(pso.PSO_new):
 		"""
 			Initialize the fuzzy systems according to FST-PSO and problem's settings. 
 		"""
+		return 
 
-		self.fuzzySystem = fuzzy.storage.fcl.Reader.Reader().load_from_file(path)		
-		print " * Fuzzy subsystem initialized"
+		#self.fuzzySystem = fuzzy.storage.fcl.Reader.Reader().load_from_file(path)		
+		#print " * Fuzzy subsystem initialized"
 
 
 	def phi(self, f_w, f_o, f_n, phi, phi_max):
@@ -209,6 +214,92 @@ class FuzzyPSO(pso.PSO_new):
 		denom = (min(f_w, f_n) - min(f_w, f_o))/f_w			# 0..1
 		numer = phi/phi_max									# 0..1		
 		return denom*numer
+
+
+	def CreateFuzzyReasoner(self, max_delta):
+
+		FR = FuzzyReasoner()
+
+		p1 = max_delta*self.MDP1
+		p2 = max_delta*self.MDP2
+		p3 = max_delta*self.MDP3
+
+
+		LOW_INERTIA = 0.3
+		MEDIUM_INERTIA = 0.5
+		HIGH_INERTIA = 1.0
+
+		LOW_SOCIAL = 1.0
+		MEDIUM_SOCIAL = 2.0
+		HIGH_SOCIAL = 3.0
+
+		LOW_COGNITIVE = 0.1
+		MEDIUM_COGNITIVE = 1.5
+		HIGH_COGNITIVE = 3.0
+
+		LOW_MINSP = 0
+		MEDIUM_MINSP = 0.001
+		HIGH_MINSP = 0.01
+
+		LOW_MAXSP = 0.1
+		MEDIUM_MAXSP = 0.15
+		HIGH_MAXSP = 0.2
+
+
+		myFS1 = FuzzySet(points=[[0, 0],	[1., 1.], 	[1., 0]], 	term="WORSE")
+		myFS2 = FuzzySet(points=[[-1., 0],	[0, 1.],	[1., 0]], 	term="SAME")
+		myFS3 = FuzzySet(points=[[-1., 0],	[-1., 1.],	[0, 0]], 	term="BETTER")
+		PHI_MF = MembershipFunction( [myFS1, myFS2, myFS3], concept="PHI" )
+
+		myFS4 = FuzzySet(points=[[0, 0],	[0, 1.], 	[p1, 1.], [p2, 0]], 	term="SAME")
+		myFS5 = FuzzySet(points=[[p1, 0],	[p2, 1.],	[p3, 0]], 	term="NEAR")
+		myFS6 = FuzzySet(points=[[p2, 0],	[p3, 1.],	[max_delta, 1.]], 	term="FAR")
+		DELTA_MF = MembershipFunction( [myFS4, myFS5, myFS6], concept="DELTA" )
+
+
+		myR1 = FuzzyRule( IF(PHI_MF, "WORSE"), 	THEN("INERTIA", LOW_INERTIA), comment="Rule inertia worse phi" )
+		myR2 = FuzzyRule( IF(PHI_MF, "WORSE"),	THEN("SOCIAL", HIGH_SOCIAL), comment="Rule social worse phi" )
+		myR3 = FuzzyRule( IF(PHI_MF, "WORSE"),	THEN("COGNITIVE", MEDIUM_COGNITIVE), comment="Rule cognitive worse phi" )
+		myR4 = FuzzyRule( IF(PHI_MF, "WORSE"), 	THEN("MINSP", HIGH_MINSP), comment="Rule min speed worse phi" )
+		myR5 = FuzzyRule( IF(PHI_MF, "WORSE"), 	THEN("MAXSP", HIGH_MAXSP), comment="Rule max speed worse phi" )
+
+		myR6 = FuzzyRule( IF(PHI_MF, "SAME"), 	THEN("INERTIA", MEDIUM_INERTIA), comment="Rule inertia same phi" )
+		myR7 = FuzzyRule( IF(PHI_MF, "SAME"),	THEN("SOCIAL", MEDIUM_SOCIAL), comment="Rule social same phi" )
+		myR8 = FuzzyRule( IF(PHI_MF, "SAME"),	THEN("COGNITIVE", MEDIUM_COGNITIVE), comment="Rule cognitive same phi" )
+		myR9 = FuzzyRule( IF(PHI_MF, "SAME"), 	THEN("MINSP", LOW_MINSP), comment="Rule min speed same phi" )
+		myR10 = FuzzyRule( IF(PHI_MF, "SAME"), 	THEN("MAXSP", MEDIUM_MAXSP), comment="Rule max speed same phi" )
+
+		myR11 = FuzzyRule( IF(PHI_MF, "BETTER"), 	THEN("INERTIA", HIGH_INERTIA), comment="Rule inertia better phi" )
+		myR12 = FuzzyRule( IF(PHI_MF, "BETTER"),	THEN("SOCIAL", LOW_SOCIAL), comment="Rule social better phi" )
+		myR13 = FuzzyRule( IF(PHI_MF, "BETTER"),	THEN("COGNITIVE", HIGH_COGNITIVE), comment="Rule cognitive better phi" )
+		myR14 = FuzzyRule( IF(PHI_MF, "BETTER"), 	THEN("MINSP", LOW_MINSP), comment="Rule min speed better phi" )
+		myR15 = FuzzyRule( IF(PHI_MF, "BETTER"), 	THEN("MAXSP", MEDIUM_MAXSP), comment="Rule max speed better phi" )
+
+
+		myR16 = FuzzyRule( IF(DELTA_MF, "SAME"), 	THEN("INERTIA", LOW_INERTIA), comment="Rule inertia same delta" )
+		myR17 = FuzzyRule( IF(DELTA_MF, "SAME"),	THEN("SOCIAL", MEDIUM_SOCIAL), comment="Rule social same delta" )
+		myR18 = FuzzyRule( IF(DELTA_MF, "SAME"),	THEN("COGNITIVE", MEDIUM_COGNITIVE), comment="Rule cognitive same delta" )
+		myR19 = FuzzyRule( IF(DELTA_MF, "SAME"), 	THEN("MINSP", MEDIUM_MINSP), comment="Rule min speed same delta" )
+		myR20 = FuzzyRule( IF(DELTA_MF, "SAME"), 	THEN("MAXSP", LOW_MAXSP), comment="Rule max speed same delta" )
+
+		myR21 = FuzzyRule( IF(DELTA_MF, "NEAR"), 	THEN("INERTIA", MEDIUM_INERTIA), comment="Rule inertia near delta" )
+		myR22 = FuzzyRule( IF(DELTA_MF, "NEAR"),	THEN("SOCIAL", LOW_SOCIAL), comment="Rule social near delta" )
+		myR23 = FuzzyRule( IF(DELTA_MF, "NEAR"),	THEN("COGNITIVE", MEDIUM_COGNITIVE), comment="Rule cognitive near delta" )
+		myR24 = FuzzyRule( IF(DELTA_MF, "NEAR"), 	THEN("MINSP", MEDIUM_MINSP), comment="Rule min speed near delta" )
+		myR25 = FuzzyRule( IF(DELTA_MF, "NEAR"), 	THEN("MAXSP", MEDIUM_MAXSP), comment="Rule max speed near delta" )
+
+		myR26 = FuzzyRule( IF(DELTA_MF, "FAR"), 	THEN("INERTIA", LOW_INERTIA), comment="Rule inertia far delta" )
+		myR27 = FuzzyRule( IF(DELTA_MF, "FAR"),		THEN("SOCIAL", MEDIUM_SOCIAL), comment="Rule social far delta" )
+		myR28 = FuzzyRule( IF(DELTA_MF, "FAR"),		THEN("COGNITIVE", MEDIUM_COGNITIVE), comment="Rule cognitive far delta" )
+		myR29 = FuzzyRule( IF(DELTA_MF, "FAR"), 	THEN("MINSP", MEDIUM_MINSP), comment="Rule min speed far delta" )
+		myR30 = FuzzyRule( IF(DELTA_MF, "FAR"), 	THEN("MAXSP", LOW_MAXSP), comment="Rule max speed far delta" )
+
+
+		FR.add_rules([myR1, myR2, myR3, myR4, myR5, myR6, myR7, myR8, myR9, myR10,
+						myR11, myR12, myR13, myR14, myR15, myR16, myR17, myR18, myR19, myR20,
+						myR21, myR22, myR23, myR24, myR25, myR26, myR27, myR28, myR29, myR30 ])
+
+		return FR
 
 
 	def UpdateCalculatedFitness(self):
@@ -242,6 +333,7 @@ class FuzzyPSO(pso.PSO_new):
 			else:
 				s.CalculatedFitness = ret
 
+			"""
 			my_input = { "Derivative": s.NewDerivativeFitness, "Distance": s.DistanceFromBest }
 			my_output = { "Inertia": 0.0, "Social": 0.0, "Cognitive": 0.0, "Maxspeed": 0.0, "Sigma": 0.0 }
 
@@ -257,6 +349,22 @@ class FuzzyPSO(pso.PSO_new):
 			if "inertia" in self.enabled_settings: 		s.Inertia = my_output["Inertia"]
 			if "maxvelocity" in self.enabled_settings: 	s.MaxSpeedMultiplier = my_output["Maxspeed"]		# because velocities are vectorial
 			if "minvelocity" in self.enabled_settings: 	s.MinSpeedMultiplier = my_output["Sigma"]			# because velocities are vectorial
+			"""
+
+			####### TEST #######
+			
+			FR = self.CreateFuzzyReasoner(self.MaxDistance)
+			FR.set_variable("PHI", s.NewDerivativeFitness)
+			FR.set_variable("DELTA", s.DistanceFromBest)
+			res = FR.evaluate_rules()
+
+			
+			if "cognitive" in self.enabled_settings: 	s.CognitiveFactor 	= res["COGNITIVE"]
+			if "social" in self.enabled_settings: 		s.SocialFactor 		= res["SOCIAL"]
+			if "inertia" in self.enabled_settings: 		s.Inertia 			= res["INERTIA"]
+			if "maxvelocity" in self.enabled_settings: 	s.MaxSpeedMultiplier = res["MAXSP"]
+			if "minvelocity" in self.enabled_settings: 	s.MinSpeedMultiplier = res["MINSP"]
+
 
 
 	def UpdatePositions(self):
