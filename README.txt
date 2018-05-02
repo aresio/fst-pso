@@ -48,7 +48,7 @@ FST-PSO has been created by M.S. Nobile, D. Besozzi, G. Pasi, G. Mauri,
 R. Colombo (University of Milan-Bicocca, Italy), and P. Cazzaniga (University
 of Bergamo, Italy). The source code was written by M.S. Nobile.
 
-FST-PSO requires two packages: pyfuzzy and numpy. 
+FST-PSO requires two packages: miniful and numpy. 
 
 Further information on GITHUB: <https://github.com/aresio/fst-pso>
 

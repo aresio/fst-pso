@@ -2,7 +2,7 @@ from distutils.core import setup
 setup(
   name = 'fst-pso',
   packages = ['fstpso'], # this must be the same as the name above
-  version = '1.3.2',
+  version = '1.4.0',
   description = 'Fuzzy Self-Tuning PSO global optimization library',
   author = 'Marco S. Nobile',
   author_email = 'nobile@disco.unimib.it',
@@ -12,7 +12,8 @@ setup(
   license='LICENSE.txt',
   long_description=open('README.txt').read(),
   install_requires=[
-        "pyfuzzy >= 0.1.0",        
+        # "pyfuzzy >= 0.1.0",        
+        "miniful >= 0.0.4", 
         "numpy >= 1.12.0"
     ],
   include_package_data=True,

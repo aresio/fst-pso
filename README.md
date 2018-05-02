@@ -39,8 +39,7 @@ Please check out the Wiki for additional descriptions.
 
 If you need any information about FST-PSO please write to: nobile@disco.unimib.it
 
-FST-PSO requires two packages: pyfuzzy and numpy. Please note that pyfuzzy also requires the ANTLR3
-python runtime. 
+FST-PSO requires two packages: miniful and numpy. 
 
 [1] Nobile, Cazzaniga, Besozzi, Colombo, Mauri, Pasi, "Fuzzy Self-Tuning PSO:
 A Settings-Free Algorithm for Global Optimization", Swarm & Evolutionary 

@@ -12,3 +12,4 @@ v1.2.2, 16/10/2017 -- Simplified interface for distributed fitness evaluations
 v1.3.0, 16/10/2017 -- Introduced support for non-uniform initialization of particles
 v1.3.1, 19/10/2017 -- Introduced test for presence of ANTLR3
 v1.3.2, 16/12/2017 -- Fixed bug of maximum velocities calculations in non-uniform search spaces
+v1.4.0, 02/25/2018 -- Removed pyfuzzy and ANTL3 dependencies.
