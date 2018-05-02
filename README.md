@@ -43,7 +43,7 @@ FST-PSO requires two packages: miniful and numpy.
 
 [1] Nobile, Cazzaniga, Besozzi, Colombo, Mauri, Pasi, "Fuzzy Self-Tuning PSO:
 A Settings-Free Algorithm for Global Optimization", Swarm & Evolutionary 
-Computation, 2017 (doi:10.1016/j.swevo.2017.09.001)
+Computation, 39:70-85, 2018 (doi:10.1016/j.swevo.2017.09.001)
 
 [2] Kennedy, Eberhart, Particle swarm optimization, in: Proceedings IEEE
 International Conference on Neural Networks, Vol. 4, 1995, pp. 1942–1948
