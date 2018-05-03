@@ -1,4 +1,5 @@
 import math
+import logging
 import random
 from numpy.random import lognormal
 from numpy import array, zeros, linalg
@@ -116,10 +117,12 @@ class PSO_new(object):
 		self.UpdateLocalBest(verbose)
 		self.Iterations = self.Iterations + 1
 		self.SinceLastGlobalUpdate = self.SinceLastGlobalUpdate + 1 
-		self.UpdateInertia()
+		#self.UpdateInertia()
 
 
 	def Solve(self, funz, verbose=False):
+
+		logging.info('Launching optimization.')
 
 		self.Iterations = 0
 		if verbose:
@@ -131,6 +134,10 @@ class PSO_new(object):
 				print "Completed PSO iteration", self.Iterations-1			
 		if verbose:
 			print "Process terminated, best position:", self.G.X, "with fitness",self.G.CalculatedFitness
+
+		logging.info('Best solution: '+str(self.G))
+		logging.info('Fitness of best solution: '+str(self.G.CalculatedFitness))
+
 		return self.G, self.G.CalculatedFitness
 		
 
@@ -268,9 +275,7 @@ class PSO_new(object):
 				self.W = copy.deepcopy(p)
 				self.W.CalculatedFitness = sys.float_info.min
 
-
 		print " *", n, "particles created, verifying local and global best"
-
 
 		self.NumberOfParticles = n
 
@@ -280,12 +285,12 @@ class PSO_new(object):
 		vectorFirstFitnesses = [ x.CalculatedFitness for x in self.Solutions ]
 		self.EstimatedWorstFitness = max(vectorFirstFitnesses)
 
-
 		self.UpdateLocalBest()
-
 		self.UpdatePositions()	
 
 		self.Dimensions = dim
+
+		logging.info('%d particles created.' % (self.numberofparticles))
 
 
 
@@ -410,12 +415,11 @@ class PSO_new(object):
 				if self.Solutions[i].CalculatedFitness > self.W.CalculatedFitness:
 					self.W = copy.deepcopy(self.Solutions[i])
 					self.WIndex = i
-		"""
-		if verbose:
-			print "Completed verification of global best"
-		"""
 
-
+		if self.Iterations>0: 
+			#logging.info('Fuzzy rules applied, %d-th iteration completed.' % (self.Iterations))
+			logging.info('[Iteration %d] best individual fitness: %f' % (self.Iterations, self.G.CalculatedFitness))
+			logging.info('[Iteration %d] best individual structure: %s' % (self.Iterations, str(self.G.X)))
 
 	# update particles' positions
 	def UpdatePositions(self, constrained_damping = False):
