@@ -120,7 +120,7 @@ class PSO_new(object):
 		#self.UpdateInertia()
 
 
-	def Solve(self, funz, verbose=False):
+	def Solve(self, funz, verbose=False, callback=None, dump_best_fitness=None, dump_best_solution=None):
 
 		logging.info('Launching optimization.')
 
@@ -131,7 +131,32 @@ class PSO_new(object):
 			if funz!=None:	funz(self)
 			self.Iterate(verbose)
 			if verbose:
-				print "Completed PSO iteration", self.Iterations-1			
+				print "Completed iteration %d" % (self.Iterations)
+
+			# new: if a callback is specified, call it at regular intervals
+			if callback!=None: 
+				interval = callback['interval']
+				function = callback['function']
+				if (self.Iterations-1)%interval==0:
+					function(self)
+					if verbose: print (" * Callback invoked")
+
+			# write the current best fitness 
+			if dump_best_fitness!=None:
+				if self.Iterations==1: 
+					with open(dump_best_fitness, "w") as fo: pass # touch
+				with open(dump_best_fitness, "a") as fo:
+					fo.write(str(self.G.CalculatedFitness)+"\n")
+	
+			# write the current best solution
+			if dump_best_solution!=None:
+				if self.Iterations==1:
+					with open(dump_best_solution, "w") as fo: pass # touch
+				with open(dump_best_solution, "a") as fo:
+					fo.write("\t".join(map(str, self.G.X))+"\n")
+
+
+
 		if verbose:
 			print "Process terminated, best position:", self.G.X, "with fitness",self.G.CalculatedFitness
 

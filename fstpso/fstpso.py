@@ -1,3 +1,4 @@
+from __future__ import print_function
 import math
 import pso
 import logging
@@ -48,7 +49,7 @@ class FuzzyPSO(pso.PSO_new):
 		self._FITNESS_ARGS = None
 
 		if logfile!=None:
-			print " * Logging to file", logfile, "enabled"
+			print (" * Logging to file", logfile, "enabled")
 			with open(logfile, 'w'): pass
 			logging.basicConfig(filename=logfile, level=logging.DEBUG)
 			logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
@@ -57,27 +58,27 @@ class FuzzyPSO(pso.PSO_new):
 
 	def disable_fuzzyrule_cognitive(self):
 		self.enabled_settings = filter(lambda x: x != "cognitive", self.enabled_settings)
-		print " * Fuzzy rules for cognitive factor DISABLED"
+		print (" * Fuzzy rules for cognitive factor DISABLED")
 
 	def disable_fuzzyrule_social(self):
 		self.enabled_settings = filter(lambda x: x != "social", self.enabled_settings)
-		print " * Fuzzy rules for social factor DISABLED"
+		print (" * Fuzzy rules for social factor DISABLED")
 
 	def disable_fuzzyrule_inertia(self):
 		self.enabled_settings = filter(lambda x: x != "inertia", self.enabled_settings)
-		print " * Fuzzy rules for inertia weight DISABLED"
+		print (" * Fuzzy rules for inertia weight DISABLED")
 
 	def disable_fuzzyrule_maxvelocity(self):
 		self.enabled_settings = filter(lambda x: x != "maxvelocity", self.enabled_settings)
-		print " * Fuzzy rules for maximum velocity cap DISABLED"
+		print (" * Fuzzy rules for maximum velocity cap DISABLED")
 
 	def disable_fuzzyrule_minvelocity(self):
 		self.enabled_settings = filter(lambda x: x != "minvelocity", self.enabled_settings)
-		print " * Fuzzy rules for minimum velocity cap DISABLED"
+		print (" * Fuzzy rules for minimum velocity cap DISABLED")
 
 
 	def solve_with_fstpso(self, max_iter=100, creation_method={'name':"uniform"}, 
-		verbose=False, arguments=None, dump_best_fitness="", dump_best_solution=""):
+		callback=None, verbose=False, arguments=None, dump_best_fitness=None, dump_best_solution=None):
 		"""
 			Launches the optimization using FST-PSO. Internally, this method checks
 			that we correctly set the pointer to the fitness function and the
@@ -93,21 +94,21 @@ class FuzzyPSO(pso.PSO_new):
 		"""
 
 		if self.FITNESS is None:
-			print "ERROR: cannot solve a problem without a fitness function; use set_fitness()"
+			print ("ERROR: cannot solve a problem without a fitness function; use set_fitness()")
 			exit(-3)
 
 		if self.Boundaries == []:
-			print "ERROR: FST-PSO cannot solve unbounded problems; use set_search_space()"
+			print ("ERROR: FST-PSO cannot solve unbounded problems; use set_search_space()")
 			exit(-4)
 
 		self.MaxIterations = max_iter
-		print " * Max iterations set to", self.MaxIterations
-		print " * Settings:", self.enabled_settings
-		print " * Launching optimization"
+		print (" * Max iterations set to", self.MaxIterations)
+		print (" * Settings:", self.enabled_settings)
+		print (" * Launching optimization")
 
 		self.NewCreateParticles(self.numberofparticles, self.dimensions, creation_method=creation_method)
 
-		result = self.Solve(None, verbose=verbose)
+		result = self.Solve(None, verbose=verbose, callback=callback, dump_best_solution=dump_best_solution, dump_best_fitness=dump_best_fitness)
 		
 		return result
 
@@ -118,13 +119,13 @@ class FuzzyPSO(pso.PSO_new):
 
 		self.__generate_FCL(max_distance=calculate_max_distance(limits))
 		self.Boundaries = limits		
-		print " * Search space boundaries set to:", limits
+		print (" * Search space boundaries set to:", limits)
 
 		self.MaxVelocity = [  math.fabs(B[1]-B[0]) for B in limits ]
-		print " * Max velocities set to:", self.MaxVelocity
+		print (" * Max velocities set to:", self.MaxVelocity)
 
 		self.numberofparticles = int(10 + 2*math.sqrt(D))
-		print " * Number of particles automatically set to", self.numberofparticles
+		print (" * Number of particles automatically set to", self.numberofparticles)
 
 		logging.info('Search space set (%d dimensions).' % (D))
 
@@ -133,15 +134,15 @@ class FuzzyPSO(pso.PSO_new):
 		try:
 			N=int(N)
 		except:
-			print "ERROR: please specify the swarm size as an integer number"
+			print ("ERROR: please specify the swarm size as an integer number")
 			exit(-6)
 
 		if N<=1:
-			print "ERROR: FST-PSO cannot work with less than 1 particles, aborting"
+			print ("ERROR: FST-PSO cannot work with less than 1 particles, aborting")
 			exit(-5)
 		else:
 			self.numberofparticles = N
-			print " * Swarm size now set to %d particles" % (self.numberofparticles)
+			print (" * Swarm size now set to %d particles" % (self.numberofparticles))
 
 		logging.info('Swarm size set to %d particles.' % (self.numberofparticles))
 
@@ -160,14 +161,14 @@ class FuzzyPSO(pso.PSO_new):
 
 
 		try:
-			print " * Testing fitness evaluation"
+			print (" * Testing fitness evaluation")
 			self.FITNESS = fitness
 			self._FITNESS_ARGS = arguments
 			self.call_fitness([1e-10]*self.dimensions, self._FITNESS_ARGS)
 			self.ParallelFitness = False
-			print " * Test successful"
+			print (" * Test successful")
 		except:
-			print "ERROR: the specified function does not seem to implement a correct fitness function"
+			print ("ERROR: the specified function does not seem to implement a correct fitness function")
 			exit(-2)
 
 
@@ -487,4 +488,4 @@ def calculate_max_distance(interval):
 
 if __name__ == '__main__':
 	
-	print "ERROR: please create a new FuzzyPSO object, specify a fitness function and the search space"
+	print ("ERROR: please create a new FuzzyPSO object, specify a fitness function and the search space")

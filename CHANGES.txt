@@ -15,3 +15,5 @@ v1.3.2, 16/12/2017 -- Fixed bug of maximum velocities calculations in non-unifor
 v1.4.0, 02/05/2018 -- Removed pyfuzzy and ANTL3 dependencies.
 v1.4.1, 02/05/2018 -- Fixed bug.
 v1.4.5, 03/05/2018 -- Cleaning up code. Introduced new methods for fuzzy rules disabling. Initial support for logging.
+v1.4.6, 14/05/2018 -- New logging functionalities.
+v1.4.7, 17/05/2018 -- Fixed bug with default values in solve_with_fstpso() method.
