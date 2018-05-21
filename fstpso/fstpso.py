@@ -2,24 +2,8 @@ from __future__ import print_function
 import math
 import pso
 import logging
-
-"""
-try:
-	import fuzzy.storage.fcl.Reader
-except:
-	print "ERROR: The ANTLR3 python runtime was not detected; pyfuzzy cannot import FST-PSO's FLC files."
-	print "       Please download and install ANTLR3 runtime from the following URL:"
-	print "       https://github.com/antlr/antlr3/tree/master/runtime/Python"
-	exit(667)
-"""
-#from surfaces import *
-from numpy import random, array
-from numpy import linalg
-#import pkg_resources
-#from tempfile import NamedTemporaryFile
+from numpy import random, array, linalg
 import os
-
-# testing new library
 from miniful import *
 
 
@@ -86,7 +70,15 @@ class FuzzyPSO(pso.PSO_new):
 
 			Args:
 				max_iter: the maximum number of iterations of FST-PSO
-				use_log: use logaritmic initialization for particles
+				creation_method: specifies the type of particles initialization
+				arguments: these arguments will be passed to the fitness evaluation function. Please note that
+				           the fitness function must accept two arguments (the particle and the arguments)
+				dump_best_fitness: at the end of each iteration fst-pso will save to this file the best fitness value
+				dump_best_solution: at the end of each iteration fst-pso will save to this file the structure of the 
+				                    best solution found so far
+				callback: this argument accepts a dictionary with two items: 'function' and 'interval'. Every 
+				          'interval' iterations, the 'function' is called. This functionality can be exploited 
+				          to implement special behavior (e.g., restart)
 				verbose: enable verbose mode
 
 			Returns:
@@ -117,7 +109,9 @@ class FuzzyPSO(pso.PSO_new):
 		D = len(limits)
 		self.dimensions = D
 
-		self.__generate_FCL(max_distance=calculate_max_distance(limits))
+		self.MaxDistance = max_distance=calculate_max_distance(limits)
+		print (" * Max distance: %f" % self.MaxDistance)
+
 		self.Boundaries = limits		
 		print (" * Search space boundaries set to:", limits)
 
@@ -131,6 +125,10 @@ class FuzzyPSO(pso.PSO_new):
 
 
 	def set_swarm_size(self, N):
+		"""
+			This (optional) method overrides FST-PSO's heuristic and forces the number of particles in the swarm.
+
+		"""
 		try:
 			N=int(N)
 		except:
@@ -159,7 +157,6 @@ class FuzzyPSO(pso.PSO_new):
 			self.ParallelFitness = False
 			return 
 
-
 		try:
 			print (" * Testing fitness evaluation")
 			self.FITNESS = fitness
@@ -185,76 +182,6 @@ class FuzzyPSO(pso.PSO_new):
 		self.FITNESS = fitness
 		self._FITNESS_ARGS = arguments
 		self.ParallelFitness = True
-
-
-		"""
-		try: 
-			fitness([np]*self.numberofparticles)
-			self.FITNESS = fitness
-			self.ParallelFitness = True
-		except:
-			print "ERROR: the specified function does not seem to implement a correct parallel fitness function"
-			exit(-3)	
-		"""
-
-	def __generate_FCL(self, max_distance=100.):
-		"""
-			This method creates a new FCL file for the problem under optimization.
-
-			Note:
-			    This method is supposed to be private and should be called only from FST-PSO.
-			    The FCL file will be automatically placed in the temporary directory.
-		"""
-
-		self.MaxDistance = max_distance
-
-		"""
-		pkg_path = pkg_resources.resource_filename('fstpso', "")
-
-		fo = NamedTemporaryFile(delete=False)
-		temp_file_name = fo.name
-
-		# with open(pkg_path+"\\pso_generated.fcl", "w") as fo:		
-		with open(pkg_path+os.sep+"pso_1st_half_2.fcl") as fi:
-			doc = fi.read()
-			fo.write(doc)
-
-		p1 = max_distance*self.MDP1
-		p2 = max_distance*self.MDP2
-		p3 = max_distance*self.MDP3
-
-		fo.write("FUZZIFY Distance\n")
-		fo.write("\tTERM Same := (0,0) (0,1) ("+str(p1)+",1) ("+str(p2)+",0);\n")
-		fo.write("\tTERM Near := ("+str(p1)+",0) ("+str(p2)+",1) ("+str(p3)+",0);\n")
-		fo.write("\tTERM Far  := ("+str(p2)+",0) ("+str(p3)+",1) ("+str(max_distance)+",1) ("+str(max_distance)+",0);\n")
-		fo.write("END_FUZZIFY\n\n")
-
-		# new derivative			
-		fo.write("FUZZIFY Derivative\n")
-		fo.write("\tTERM Worse :=   ( 0,0) (1,1)   (1,0);\n")
-		fo.write("\tTERM Same :=    ("+str(self.DER1)+",0) (0,1)   ("+str(self.DER2)+",0);\n")
-		fo.write("\tTERM Better  := (-1.0,0)   (-1,1)  (0,0);\n")
-		fo.write("END_FUZZIFY\n\n")
-		
-		with open(pkg_path+os.sep+"pso_2nd_half_2.fcl") as fi:
-			doc = fi.readlines()					
-			fo.write("\n".join(doc))
-
-		fo.close()
-			
-		self.init_fuzzy(temp_file_name)
-		os.remove(temp_file_name) # clean up
-		"""
-
-
-	def init_fuzzy(self, path="pso.fcl"):
-		"""
-			Initialize the fuzzy systems according to FST-PSO and problem's settings. 
-		"""
-		return 
-
-		#self.fuzzySystem = fuzzy.storage.fcl.Reader.Reader().load_from_file(path)		
-		#print " * Fuzzy subsystem initialized"
 
 
 	def phi(self, f_w, f_o, f_n, phi, phi_max):
