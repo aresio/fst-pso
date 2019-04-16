@@ -2,7 +2,7 @@ from distutils.core import setup
 setup(
   name = 'fst-pso',
   packages = ['fstpso'], # this must be the same as the name above
-  version = '1.4.8',
+  version = '1.4.10',
   description = 'Fuzzy Self-Tuning PSO global optimization library',
   author = 'Marco S. Nobile',
   author_email = 'nobile@disco.unimib.it',
@@ -17,8 +17,6 @@ setup(
         "numpy >= 1.12.0"
     ],
   include_package_data=True,
-  classifiers = ['Programming Language :: Python :: 2.7'],
-  package_data={ 
-    'fstpso': ['pso_1st_half_2.fcl', 'pso_2nd_half_2.fcl'],
-},
+  classifiers = ['Programming Language :: Python :: 2.7', 'Programming Language :: Python :: 3.7'],
+  #package_data={     'fstpso': ['pso_1st_half_2.fcl', 'pso_2nd_half_2.fcl'],},
 )

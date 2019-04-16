@@ -62,7 +62,7 @@ class FuzzyPSO(pso.PSO_new):
 
 
 	def solve_with_fstpso(self, max_iter=100, creation_method={'name':"uniform"}, 
-		callback=None, verbose=False, arguments=None, dump_best_fitness=None, dump_best_solution=None):
+		callback=None, verbose=False, dump_best_fitness=None, dump_best_solution=None):
 		"""
 			Launches the optimization using FST-PSO. Internally, this method checks
 			that we correctly set the pointer to the fitness function and the
@@ -71,8 +71,6 @@ class FuzzyPSO(pso.PSO_new):
 			Args:
 				max_iter: the maximum number of iterations of FST-PSO
 				creation_method: specifies the type of particles initialization
-				arguments: these arguments will be passed to the fitness evaluation function. Please note that
-				           the fitness function must accept two arguments (the particle and the arguments)
 				dump_best_fitness: at the end of each iteration fst-pso will save to this file the best fitness value
 				dump_best_solution: at the end of each iteration fst-pso will save to this file the structure of the 
 				                    best solution found so far
@@ -100,12 +98,21 @@ class FuzzyPSO(pso.PSO_new):
 
 		self.NewCreateParticles(self.numberofparticles, self.dimensions, creation_method=creation_method)
 
-		result = self.Solve(None, verbose=verbose, callback=callback, dump_best_solution=dump_best_solution, dump_best_fitness=dump_best_fitness)
+		result = self.Solve(None, verbose=verbose, callback=callback, dump_best_solution=dump_best_solution, 
+			dump_best_fitness=dump_best_fitness)
 		
 		return result
 
 
 	def set_search_space(self, limits):
+		"""
+			Sets the boundaries of the search space.
+
+			Args:
+			limits : 2D list or array, shape = (2, dimensions)
+					 The dimensions of the problem are automatically determined 
+					 according to the length of 'limits'.
+		"""
 		D = len(limits)
 		self.dimensions = D
 
@@ -126,7 +133,8 @@ class FuzzyPSO(pso.PSO_new):
 
 	def set_swarm_size(self, N):
 		"""
-			This (optional) method overrides FST-PSO's heuristic and forces the number of particles in the swarm.
+			This (optional) method overrides FST-PSO's heuristic and 
+			forces the number of particles in the swarm.
 
 		"""
 		try:
@@ -146,11 +154,27 @@ class FuzzyPSO(pso.PSO_new):
 
 
 	def call_fitness(self, data, arguments=None):
+		if self.FITNESS == None:
+			print ("ERROR: fitness function not valid")
+			exit(17)
 		if arguments==None:	return self.FITNESS(data)
 		else:				return self.FITNESS(data, arguments)
 
 
-	def set_fitness(self, fitness, arguments=None, skip_test=False):			
+	def set_fitness(self, fitness, arguments=None, skip_test=False):		
+		"""
+			Sets the fitness function used to evaluate the particles.
+			This method performs an automatic validation of the fitness function
+			(you can disable this feature by setting the optional argument 'skip_test' to True).
+
+			Args:
+			fitness : a user-defined function. The function must accept
+			a vector of real-values as input (i.e., a candidate solution)
+			and must return a real value (i.e., the corresponding fitness value)
+			arguments : a dictionary containing the arguments to be passed to the fitness function.
+			skip_test : True/False, bypasses the automatic fitness check.
+	
+		"""	
 		if skip_test:
 			self.FITNESS = fitness
 			self._FITNESS_ARGS = arguments
@@ -178,10 +202,15 @@ class FuzzyPSO(pso.PSO_new):
 
 		np = pso.Particle()
 		np.X = [0]*self.dimensions
-		fitness([np.X]*self.numberofparticles)
 		self.FITNESS = fitness
 		self._FITNESS_ARGS = arguments
-		self.ParallelFitness = True
+		try:
+			self.call_fitness([np.X]*self.numberofparticles, arguments)
+		except:
+			print ("ERROR: the specified function does not seem to implement a correct fitness function")
+			exit(-2)
+		self.ParallelFitness = True		
+		print (" * Test successful")
 
 
 	def phi(self, f_w, f_o, f_n, phi, phi_max):
