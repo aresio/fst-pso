@@ -62,7 +62,8 @@ class FuzzyPSO(pso.PSO_new):
 
 
 	def solve_with_fstpso(self, max_iter=100, creation_method={'name':"uniform"}, 
-		callback=None, verbose=False, dump_best_fitness=None, dump_best_solution=None):
+		initial_guess_list = None, callback=None, verbose=False, 
+		dump_best_fitness=None, dump_best_solution=None):
 		"""
 			Launches the optimization using FST-PSO. Internally, this method checks
 			that we correctly set the pointer to the fitness function and the
@@ -71,6 +72,8 @@ class FuzzyPSO(pso.PSO_new):
 			Args:
 				max_iter: the maximum number of iterations of FST-PSO
 				creation_method: specifies the type of particles initialization
+				initial_guess_list: the user can specify a list of initial guesses for particles
+									to accelerate the convergence (BETA)
 				dump_best_fitness: at the end of each iteration fst-pso will save to this file the best fitness value
 				dump_best_solution: at the end of each iteration fst-pso will save to this file the structure of the 
 				                    best solution found so far
@@ -96,7 +99,8 @@ class FuzzyPSO(pso.PSO_new):
 		print (" * Settings:", self.enabled_settings)
 		print (" * Launching optimization")
 
-		self.NewCreateParticles(self.numberofparticles, self.dimensions, creation_method=creation_method)
+		self.NewCreateParticles(self.numberofparticles, self.dimensions, 
+			creation_method=creation_method, initial_guess_list=initial_guess_list)
 
 		result = self.Solve(None, verbose=verbose, callback=callback, dump_best_solution=dump_best_solution, 
 			dump_best_fitness=dump_best_fitness)
