@@ -519,6 +519,7 @@ class FuzzyPSO(PSO_new):
 		print (" * Fuzzy rules for minimum velocity cap DISABLED")
 
 
+
 	def _count_iterations(self, FES):
 		NFEcur = 0
 		curpop = 0
