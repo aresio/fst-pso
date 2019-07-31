@@ -1,13 +1,461 @@
 from __future__ import print_function
-import math
-import pso
-import logging
-from numpy import random, array, linalg
-import os
 from miniful import *
+import math
+import logging
+from numpy import random, array, linalg, zeros, argmin, argsort
+import os
+import copy
+import random
+from numpy.random import lognormal
+import sys
+import subprocess
+
+try:
+	# Python 2
+	range = xrange
+except NameError:
+	# Python 3
+	pass
 
 
-class FuzzyPSO(pso.PSO_new):
+class Particle(object):
+
+	def __init__(self):
+		self.X = []
+		self.V = []
+		self.B = []
+		self.MarkedForRestart = False
+		self.CalculatedFitness = sys.float_info.max
+		self.FitnessDevStandard = sys.float_info.max
+		self.CalculatedBestFitness = sys.float_info.max
+		self.SinceLastLocalUpdate = 0
+		
+		self.DerivativeFitness = 0
+		self.MagnitudeMovement = 0
+		self.DistanceFromBest = sys.float_info.max
+		self.CognitiveFactor = 2.
+		self.SocialFactor = 2.
+		self.Inertia = 0.5
+
+		# support for PPSO
+		self.MaxSpeedMultiplier = .25
+		self.MinSpeedMultiplier = 0
+		
+	def __repr__(self):
+		return "<Particle %s>" % str(self.X)
+
+	def __str__(self):
+		return "\t".join(map(str, self.X))
+
+	def _mark_for_restart(self):
+		self.MarkedForRestart=True
+
+
+class PSO_new(object):
+
+	def __repr__(self):
+		return str("<PSO instance "+self.ID+">")
+
+	def __init__(self, ID=""):
+		self.G = None
+		self.W = None			# worst
+
+		self.ID = ID
+
+		self.GIndex = 0
+		self.WIndex = 0
+
+		self.Solutions = []
+		self.InertiaStart = 0.9
+		self.InertiaEnd 	 = 0.4
+		self.Inertia 	 = 0.9
+		self.CognitiveFactor = 1.9
+		self.SocialFactor    = 1.9
+		self.MaxVelocity  = 1.0
+		self.UseRestart = False
+		self.UseLog = False
+		self.ProximityThreshold = 1E-1
+
+		if sys.version_info[0] < 3:
+			maximum_integer = sys.maxint			
+		else:
+			maximum_integer = sys.maxsize			
+
+		self.MaxIterations = maximum_integer
+		self.MaxNoUpdateIterations = maximum_integer
+		self.GoodFitness = -sys.float_info.max
+		self.Iterations = 0
+		self.SinceLastGlobalUpdate = 0
+		self.FITNESS = None
+		self.Boundaries = []
+		self.save_path = ""
+		self.NumberOfParticles = 0
+		self.Color = "black"
+		self.Nickname = "Standard"
+		self.StopOnGoodFitness = False
+		self.EstimatedWorstFitness = sys.float_info.max
+		self.Dimensions = 0
+		self._used_generation_method = None
+		self._threshold_local_update = 50
+
+		self.SIMULATOR_PATH = None
+		self.ARGUMENTS = None
+		self.COMMUNICATION_FILE = None
+
+		# change this for parallel fitness calculation
+		self.ParallelFitness = False
+
+
+	def getBestIndex(self):
+		index = 0
+		best_fitness = self.Solutions[0].CalculatedFitness
+		for n, s in enumerate(self.Solutions):
+			if s.CalculatedFitness < best_fitness:
+				best_fitness = s.CalculatedFitness
+				index = n
+		return index
+
+	def getWorstIndex(self):
+		index = 0
+		worst_fitness = self.Solutions[0].CalculatedFitness
+		for n, s in enumerate(self.Solutions):
+			if s.CalculatedFitness > worst_fitness:
+				worst_fitness = s.CalculatedFitness
+				index = n
+		return index
+
+	def UpdateInertia(self):
+		self.Inertia = self.InertiaStart - ( self.InertiaStart-self.InertiaEnd ) / self.MaxIterations * self.Iterations
+
+	def Iterate(self, verbose=False):
+		self.UpdatePositions()
+		self.UpdateVelocities()
+		self.UpdateCalculatedFitness()
+		self.UpdateLocalBest(verbose)
+		self.Iterations = self.Iterations + 1
+		self.SinceLastGlobalUpdate = self.SinceLastGlobalUpdate + 1 
+
+	def Solve(self, funz, verbose=False, callback=None, dump_best_fitness=None, dump_best_solution=None):
+
+		logging.info('Launching optimization.')
+
+		self.Iterations = 0
+		if verbose:
+			print ("Process started")
+
+		while( not self.TerminationCriterion(verbose=verbose) ):
+			if funz!=None:	funz(self)
+			self.Iterate(verbose)
+			if verbose:
+				print ("Completed iteration %d" % (self.Iterations))
+			else:
+				if self.Iterations in [self.MaxIterations/x for x in range(1,10)]:
+					print (" * %dth iteration out of %d completed." % (self.Iterations, self.MaxIterations))
+
+			# new: if a callback is specified, call it at regular intervals
+			if callback!=None: 
+				interval = callback['interval']
+				function = callback['function']
+				if (self.Iterations-1)%interval==0:
+					function(self)
+					if verbose: print (" * Callback invoked")
+
+			# write the current best fitness 
+			if dump_best_fitness!=None:
+				if self.Iterations==1: 
+					with open(dump_best_fitness, "w") as fo: pass # touch
+				with open(dump_best_fitness, "a") as fo:
+					fo.write(str(self.G.CalculatedFitness)+"\n")
+	
+			# write the current best solution
+			if dump_best_solution!=None:
+				if self.Iterations==1:
+					with open(dump_best_solution, "w") as fo: pass # touch
+				with open(dump_best_solution, "a") as fo:
+					fo.write("\t".join(map(str, self.G.X))+"\n")
+
+		if verbose:
+			print ("Process terminated, best position:", self.G.X, "with fitness", self.G.CalculatedFitness)
+
+		logging.info('Best solution: '+str(self.G))
+		logging.info('Fitness of best solution: '+str(self.G.CalculatedFitness))
+
+		return self.G, self.G.CalculatedFitness
+		
+	def TerminationCriterion(self, verbose=False):
+
+		if verbose:
+			print ("Iteration:", self.Iterations), 
+			print (", since last global update:", self.SinceLastGlobalUpdate)
+
+		if self.StopOnGoodFitness == True:
+			if self.G.CalculatedFitness < self.GoodFitness:
+				if verbose:
+					print ("Optimal fitness reached", self.G.CalculatedFitness)
+				return True
+
+		if self.SinceLastGlobalUpdate > self.MaxNoUpdateIterations:
+			if verbose:
+				print ("Too many iterations without new global best")
+			return True
+		
+		if self.Iterations > self.MaxIterations:
+			if verbose:
+				print ("Maximum iterations reached")
+			return True
+		else:
+			return False
+
+	def set_number_of_particles(self, n):
+		self.NumberOfParticles = n
+		print ("Number of particles set to", n)
+
+	def auto_create_particles(self, dim, use_log):
+		if self.NumberOfParticles == 0:
+			print ("ERROR: it is impossible to autocreate 0 particles")
+			return
+		self.CreateParticles(self.NumberOfParticles, dim, use_log)
+		print ("%d particles autocreated" % self.NumberOfParticles)
+
+	def NewGenerate(self, lista, creation_method):
+
+		ret = []
+
+		if creation_method['name'] == "uniform":
+			for i in range(len(lista)):
+				ret.append(self.Boundaries[i][0] + (self.Boundaries[i][1]-self.Boundaries[i][0]) * random.random())
+
+		elif creation_method['name'] == "logarithmic":
+
+			for i in range(len(lista)):
+				if self.Boundaries[i][0]<0:
+					minimo = -5
+					massimo = math.log(self.Boundaries[i][1])
+					res = math.exp(minimo+(massimo-minimo)*random.random())
+					if random.random() > .5:
+						res *= -1
+					ret.append(res)
+				else:					
+					minimo = math.log(self.Boundaries[i][0])
+					massimo = math.log(self.Boundaries[i][1])
+					ret.append(math.exp(minimo+(massimo-minimo)*random.random()))
+
+		elif creation_method['name'] == "normal":
+			for i in range(len(lista)):
+				while(True):
+					if self.Boundaries[i][1]==self.Boundaries[i][0]: 
+						ret.append( self.Boundaries[i][1] )
+						break
+					cand_position = random.gauss( (self.Boundaries[i][1]+self.Boundaries[i][0])/2,  creation_method['sigma'] )					
+					if (cand_position>=self.Boundaries[i][0] and cand_position<=self.Boundaries[i][1]):
+						ret.append(cand_position)
+						break
+
+		elif creation_method['name'] == "lognormal":
+			for i in range(len(lista)):
+				minord = math.log(self.Boundaries[i][0])
+				maxord = math.log(self.Boundaries[i][1])
+				media = (maxord+minord)/2.
+				while(True):
+					if self.Boundaries[i][1]==self.Boundaries[i][0]: 
+						ret.append( self.Boundaries[i][1] )
+						break
+					v = lognormal(media, creation_method['sigma'])
+					if v>=self.Boundaries[i][0] and v<=self.Boundaries[i][1]:
+						break
+				ret.append(v)
+
+		else:
+			print ("Unknown particles initialization mode")
+			exit(20)
+
+		return ret
+
+
+
+	def NewCreateParticles(self, n, dim, creation_method={ 'name':"uniform"}, initial_guess_list=None):
+
+		del self.Solutions [:]
+
+		for i in range(n):
+
+			p = Particle()		
+		
+			p.X = self.NewGenerate( [0]*dim, creation_method = creation_method )
+			p.B = copy.deepcopy(p.X)
+			p.V = list(zeros(dim))
+
+			self.Solutions.append(p)
+			
+			if len(self.Solutions)==1:
+				self.G = copy.deepcopy(p)
+				self.G.CalculatedFitness = sys.float_info.max
+				self.W = copy.deepcopy(p)
+				self.W.CalculatedFitness = sys.float_info.min
+
+
+		if initial_guess_list is not None:
+			if len(initial_guess_list)>n:
+				print ("ERROR: the number of provided initial guesses (%d) is greater than the swarm size (%d), aborting." % (len(initial_guess_list), n))
+				exit(17)
+			for i, ig in enumerate(initial_guess_list):
+				if len(ig)!=dim:
+					print ("ERROR: each initial guess must have length equal to %d, aborting." % dim)
+					exit(18)
+				else:
+					self.Solutions[i].X=copy.deepcopy(ig)
+					self.Solutions[i].B=copy.deepcopy(ig)
+
+			print (" * %d particles created, initial guesses added to the swarm." % n)
+		else:
+			print (" * %d particles created." % n)
+
+		print (" * FST-PSO will now assess the local and global best particles.")
+
+		self.NumberOfParticles = n
+
+		if not self.ParallelFitness:
+			self.UpdateCalculatedFitness()		# experimental
+
+		vectorFirstFitnesses = [ x.CalculatedFitness for x in self.Solutions ]
+		self.EstimatedWorstFitness = max(vectorFirstFitnesses)
+
+		self.UpdateLocalBest()
+		self.UpdatePositions()	
+
+		self.Dimensions = dim
+
+		logging.info(' * %d particles created.' % (self.numberofparticles))
+
+		self._used_generation_method = creation_method
+
+
+	def CreateParticles(self, n, dim, use_log=False):
+
+		self.UseLog = use_log
+
+		if self.FITNESS == None:
+			print ("ERROR: particles must be created AFTER the definition of the fitness function")
+			exit()
+
+		del self.Solutions [:]
+
+		# for all particles
+		for i in range(n):
+
+			p = Particle()
+	
+			p.X = self.Generate( [0]*dim, use_log = use_log )
+			p.B = copy.deepcopy(p.X)
+			p.V = list(zeros(dim))
+
+			self.Solutions.append(p)
+			
+			if len(self.Solutions)==1:
+				self.G = copy.deepcopy(p)
+				self.G.CalculatedFitness = sys.float_info.max
+				self.W = copy.deepcopy(p)
+				self.W.CalculatedFitness = sys.float_info.min
+
+		print (" * %d particles created, verifying local and global best" % n)
+
+		self.NumberOfParticles = n
+
+		self.UpdateCalculatedFitness()		# experimental
+
+		vectorFirstFitnesses = [ x.CalculatedFitness for x in self.Solutions ]
+		self.EstimatedWorstFitness = max(vectorFirstFitnesses)
+
+		self.UpdateLocalBest()
+
+		self.UpdatePositions()
+
+		self.Dimensions = dim
+
+	def UpdateCalculatedFitness(self):
+		for s in self.Solutions:
+			prev = s.CalculatedFitness
+			ret = self.FITNESS(s.X)
+			if s.MagnitudeMovement!=0:
+				s.DerivativeFitness = (ret-prev)/s.MagnitudeMovement
+			if isinstance(ret, list):
+				s.CalculatedFitness = ret[0]
+				s.Differential = ret[1]
+			else:
+				s.CalculatedFitness = ret
+		
+	def UpdateLocalBest(self, verbose=False, semiverbose=True):		
+
+		if verbose:
+			print ("Starting verification of local best")
+		for i in range(len(self.Solutions)):			
+			if verbose:
+				print (" Solution", i, ":", self.Solutions[i])
+			if self.Solutions[i].CalculatedFitness < self.Solutions[i].CalculatedBestFitness:
+				self.Solutions[i].SinceLastLocalUpdate = 0
+				if verbose: print ("new best for ", i, " has fitness", self.Solutions[i].CalculatedFitness)
+
+				self.Solutions[i].B = copy.deepcopy(self.Solutions[i].X)
+				self.Solutions[i].CalculatedBestFitness = self.Solutions[i].CalculatedFitness
+				if self.Solutions[i].CalculatedFitness < self.G.CalculatedFitness:
+					self.G = copy.deepcopy(self.Solutions[i])
+					if verbose or semiverbose:
+						print (" * New best particle in the swarm is #%d with fitness %f." % (i, self.Solutions[i].CalculatedFitness))
+
+					self.SinceLastGlobalUpdate = 0			
+					self.GIndex = i
+			else:
+				if verbose: print (" Fitness calcolata:", self.Solutions[i].CalculatedFitness, "old best", self.Solutions[i].CalculatedBestFitness)
+				self.Solutions[i].SinceLastLocalUpdate += 1
+				if self.G.X != self.Solutions[i].B:
+					if self.Solutions[i].SinceLastLocalUpdate>self._threshold_local_update:
+						self.Solutions[i]._mark_for_restart()
+						if verbose: print (" * Particle %d marked for restart" % i)
+
+				# update global worst
+				if self.Solutions[i].CalculatedFitness > self.W.CalculatedFitness:
+					self.W = copy.deepcopy(self.Solutions[i])
+					self.WIndex = i
+
+		if self.Iterations>0: 
+			logging.info('[Iteration %d] best individual fitness: %f' % (self.Iterations, self.G.CalculatedFitness))
+			logging.info('[Iteration %d] best individual structure: %s' % (self.Iterations, str(self.G.X)))
+
+	def UpdateVelocities(self):
+		"""
+			Update the velocity of all particles, according to the PSO settings.
+		"""
+
+		for numpart, p in enumerate(self.Solutions):
+
+			"""
+			if self.UseRestart:
+				if self.getBestIndex != numpart:
+					distance_from_global_best = linalg.norm( array(self.G.X) - array(p.X) )
+					if distance_from_global_best<self.ProximityThreshold:
+						if self.Iterations>0:	
+							print (" * Particle", numpart, "marked for restart")
+							p.MarkedForRestart = True
+			"""
+
+			for n in range(len(p.X)):		
+
+				fattore1 = self.Inertia * p.V[n]
+				fattore2 = random.random() * self.CognitiveFactor * (p.B[n] - p.X[n])
+				fattore3 = random.random() * self.SocialFactor * (self.G.X[n] - p.X[n])
+
+				newvelocity = fattore1+fattore2+fattore3
+
+				if newvelocity > self.MaxVelocity[n]:
+					newvelocity = self.MaxVelocity[n]
+				elif newvelocity < -self.MaxVelocity[n]:
+					newvelocity = -self.MaxVelocity[n]
+
+				p.V[n] = newvelocity
+
+
+
+class FuzzyPSO(PSO_new):
 
 	def __init__(self, logfile=None):
 		"""
@@ -27,6 +475,8 @@ class FuzzyPSO(pso.PSO_new):
 		self.MDP3 = 0.6 
 		self.MaxDistance = 0
 		self.dimensions = 0
+		self._overall_fitness_evaluations = 0
+		self._FES = None
 
 		self.enabled_settings = ["cognitive", "social", "inertia", "minvelocity", "maxvelocity"]
 
@@ -39,6 +489,14 @@ class FuzzyPSO(pso.PSO_new):
 			logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 			logging.info('FST-PSO object created.')
 
+	def enable_decreasing_population(self, FES):
+		print (" * Fitness evaluations budget was specified, the 'max_iter' argument will be discarded and the swarm size will be ignored.")
+		self.enabled_settings.append("lin_pop_decrease")
+		self._FES = FES
+
+	def enable_reboot(self):
+		self.enabled_settings += "reboot"
+		print (" * Reboots ENABLED")
 
 	def disable_fuzzyrule_cognitive(self):
 		self.enabled_settings = filter(lambda x: x != "cognitive", self.enabled_settings)
@@ -61,8 +519,21 @@ class FuzzyPSO(pso.PSO_new):
 		print (" * Fuzzy rules for minimum velocity cap DISABLED")
 
 
-	def solve_with_fstpso(self, max_iter=100, creation_method={'name':"uniform"}, 
-		callback=None, verbose=False, dump_best_fitness=None, dump_best_solution=None):
+	def _count_iterations(self, FES):
+		NFEcur = 0
+		curpop = 0
+		SEQ = []
+		while (NFEcur<FES):
+			curpop = self._get_pop_size(NFEcur)
+			NFEcur += curpop
+			SEQ.append(curpop)
+		#plot(range(len(SEQ)), SEQ);		show()
+		return len(SEQ)
+
+
+	def solve_with_fstpso(self, max_iter=100, creation_method={'name':"uniform"},
+		initial_guess_list = None, callback=None, verbose=False, 
+		dump_best_fitness=None, dump_best_solution=None):
 		"""
 			Launches the optimization using FST-PSO. Internally, this method checks
 			that we correctly set the pointer to the fitness function and the
@@ -71,6 +542,8 @@ class FuzzyPSO(pso.PSO_new):
 			Args:
 				max_iter: the maximum number of iterations of FST-PSO
 				creation_method: specifies the type of particles initialization
+				initial_guess_list: the user can specify a list of initial guesses for particles
+									to accelerate the convergence (BETA)
 				dump_best_fitness: at the end of each iteration fst-pso will save to this file the best fitness value
 				dump_best_solution: at the end of each iteration fst-pso will save to this file the structure of the 
 				                    best solution found so far
@@ -82,7 +555,6 @@ class FuzzyPSO(pso.PSO_new):
 			Returns:
 			    This method returns a couple (optimal solution, fitness of the optimal solution)
 		"""
-
 		if self.FITNESS is None:
 			print ("ERROR: cannot solve a problem without a fitness function; use set_fitness()")
 			exit(-3)
@@ -91,12 +563,31 @@ class FuzzyPSO(pso.PSO_new):
 			print ("ERROR: FST-PSO cannot solve unbounded problems; use set_search_space()")
 			exit(-4)
 
-		self.MaxIterations = max_iter
-		print (" * Max iterations set to", self.MaxIterations)
-		print (" * Settings:", self.enabled_settings)
-		print (" * Launching optimization")
+		if self._FES is not None:
+			max_iter = self._count_iterations(self._FES)
+			print (" * Iterations automatically set to %d" % max_iter)
 
-		self.NewCreateParticles(self.numberofparticles, self.dimensions, creation_method=creation_method)
+		self.MaxIterations = max_iter
+		self._overall_fitness_evaluations = 0
+		self.UseRestart = "reboot" in self.enabled_settings
+		if self.UseRestart:
+			self._threshold_local_update = max(30, int(max_iter/20))
+			print (" * Reboots are activated with theta=%d" % self._threshold_local_update)
+			
+		print (" * Max iterations set to", self.MaxIterations)
+		print (" * Enabled settings:", " ".join(map(lambda x: "[%s]" % x, self.enabled_settings)))
+
+		if "lin_pop_decrease" in self.enabled_settings:
+			self.numberofparticles = self._get_pop_size(0)
+
+		print ("\n *** Launching optimization ***")
+
+		print ("* Creating and evaluating particles")
+
+		self.NewCreateParticles(self.numberofparticles, self.dimensions, 
+			creation_method=creation_method, initial_guess_list=initial_guess_list)
+
+		self._overall_fitness_evaluations += self.numberofparticles
 
 		result = self.Solve(None, verbose=verbose, callback=callback, dump_best_solution=dump_best_solution, 
 			dump_best_fitness=dump_best_fitness)
@@ -311,7 +802,7 @@ class FuzzyPSO(pso.PSO_new):
 		return FR
 
 
-	def UpdateCalculatedFitness(self):
+	def UpdateCalculatedFitness(self, verbose=False):
 		"""
 			Calculate the fitness values for each particle according to user's fitness function,
 			and then update the settings of each particle.
@@ -326,6 +817,13 @@ class FuzzyPSO(pso.PSO_new):
 			for s in self.Solutions:
 				# all_fitness.append( self.FITNESS(s.X, self._FITNESS_ARGS ) )
 				all_fitness.append( self.call_fitness(s.X, self._FITNESS_ARGS ) )
+
+		fr_cogn = "cognitive" in self.enabled_settings
+		fr_soci = "social" in self.enabled_settings
+		fr_iner = "inertia" in self.enabled_settings
+		fr_maxv = "maxvelocity" in self.enabled_settings
+		fr_minv = "minvelocity" in self.enabled_settings
+
 
 		# for each i-th individual "s"...
 		for i,s in enumerate(self.Solutions):
@@ -343,24 +841,6 @@ class FuzzyPSO(pso.PSO_new):
 			else:
 				s.CalculatedFitness = ret
 
-			"""
-			my_input = { "Derivative": s.NewDerivativeFitness, "Distance": s.DistanceFromBest }
-			my_output = { "Inertia": 0.0, "Social": 0.0, "Cognitive": 0.0, "Maxspeed": 0.0, "Sigma": 0.0 }
-
-
-			try:
-				my_output = sugeno_inference(my_input, self.fuzzySystem, verbose=False)
-			except:
-				print my_input
-				exit(-100)
-
-			if "cognitive" in self.enabled_settings: 	s.CognitiveFactor = my_output["Cognitive"]
-			if "social" in self.enabled_settings: 		s.SocialFactor = my_output["Social"]
-			if "inertia" in self.enabled_settings: 		s.Inertia = my_output["Inertia"]
-			if "maxvelocity" in self.enabled_settings: 	s.MaxSpeedMultiplier = my_output["Maxspeed"]		# because velocities are vectorial
-			if "minvelocity" in self.enabled_settings: 	s.MinSpeedMultiplier = my_output["Sigma"]			# because velocities are vectorial
-			"""
-
 			####### TEST #######
 			
 			FR = self.CreateFuzzyReasoner(self.MaxDistance)
@@ -369,18 +849,53 @@ class FuzzyPSO(pso.PSO_new):
 			res = FR.evaluate_rules()
 
 			
-			if "cognitive" in self.enabled_settings: 	s.CognitiveFactor 	= res["COGNITIVE"]
-			if "social" in self.enabled_settings: 		s.SocialFactor 		= res["SOCIAL"]
-			if "inertia" in self.enabled_settings: 		s.Inertia 			= res["INERTIA"]
-			if "maxvelocity" in self.enabled_settings: 	s.MaxSpeedMultiplier = res["MAXSP"]
-			if "minvelocity" in self.enabled_settings: 	s.MinSpeedMultiplier = res["MINSP"]
+			if fr_cogn: 			s.CognitiveFactor 	= res["COGNITIVE"]
+			if fr_soci: 			s.SocialFactor 		= res["SOCIAL"]
+			if fr_iner: 			s.Inertia 			= res["INERTIA"]
+			if fr_maxv: 			s.MaxSpeedMultiplier = res["MAXSP"]
+			if fr_minv: 			s.MinSpeedMultiplier = res["MINSP"]
+		
+		if "lin_pop_decrease" in self.enabled_settings: 
+			indices_sorted_fitness = argsort(all_fitness)[::-1]
+			nps = self._get_pop_size(NFEcur = self._overall_fitness_evaluations)
+			self._overall_fitness_evaluations += len(self.Solutions)
+			if verbose: print (" * Next population size: %d." % nps)
+
+			##### WARNING #####
+			self.Solutions = [ self.Solutions[i] for i in indices_sorted_fitness[:nps] ]			
+			##### WARNING #####
 
 
+	def _get_pop_size(self, NFEcur):		
+		D = self.dimensions
+		heuristic_max = int(math.sqrt(D)*math.log(D))
+		heuristic_min = int(10 + 2*math.sqrt(D))
+		PSmin = heuristic_min
+		PSmax = heuristic_max
+		NFEmax = self._FES
+		EX = 1
+		v = int( (float(PSmin-PSmax)/((NFEmax-PSmax)**EX)) * (NFEcur-PSmax)**EX+PSmax )
+		if NFEcur+v>NFEmax:
+			return NFEmax-NFEcur
+		else:
+			return v
+		
 
-	def UpdatePositions(self):
+	def UpdatePositions(self, verbose=False):
 		"""
 			Update particles' positions and update the internal information.
 		"""
+
+		if self.UseRestart:
+			if self.Iterations+self._threshold_local_update<self.MaxIterations: 
+				for p in self.Solutions:
+					if p.MarkedForRestart:
+						p.X = self.NewGenerate( zeros(self.dimensions), creation_method = self._used_generation_method )
+						p.B = copy.deepcopy(p.X)
+						p.V = list(zeros(len(p.X)))
+						p.SinceLastLocalUpdate = 0
+						p.MarkedForRestart = False
+						if verbose: print ("REBOOT happened")
 
 		for p in self.Solutions:	
 
@@ -402,6 +917,8 @@ class FuzzyPSO(pso.PSO_new):
 
 			p.MagnitudeMovement = linalg.norm(array(p.X)-array(prev_pos), ord=2)
 			p.DistanceFromBest = linalg.norm(array(p.X)-array(self.G.X), ord=2)
+
+					
 
 		#logging.info('Particles positions updated.')
 
@@ -434,6 +951,44 @@ class FuzzyPSO(pso.PSO_new):
 				p.V[n] = newvelocity
 
 		#logging.info('Particles velocities updated.')
+
+
+	def TerminationCriterion(self, verbose=False):
+		""" 
+			This new method for termination criterion verification 
+			supports FES exaustion. 
+		"""
+
+		if verbose:
+			print (" * Iteration:", self.Iterations), 
+			print ("   since last global update:", self.SinceLastGlobalUpdate)
+
+		if self.StopOnGoodFitness == True:
+			if self.G.CalculatedFitness < self.GoodFitness:
+				if verbose:
+					print (" * Optimal fitness reached", self.G.CalculatedFitness)
+				return True
+
+		if self.SinceLastGlobalUpdate > self.MaxNoUpdateIterations:
+			if verbose:
+				print ("Too many iterations without new global best")
+			return True
+
+		#print (" * Iteration %d: used %d/%d f.e." % (self.Iterations, self._overall_fitness_evaluations, self._FES))
+
+		if self._FES is not None:
+			if self._overall_fitness_evaluations>=self._FES:
+				print (" * Budget of fitness evaluations exhausted.")
+				return True
+		else:			
+			if self.Iterations > self.MaxIterations:
+				if verbose:
+					print (" * Maximum iterations reached.")
+				return True
+			else:
+				return False
+
+
 
 def calculate_max_distance(interval):
 	accum = 0

@@ -18,3 +18,6 @@ v1.4.5, 03/05/2018 -- Cleaning up code. Introduced new methods for fuzzy rules d
 v1.4.6, 14/05/2018 -- New logging functionalities.
 v1.4.7, 17/05/2018 -- Fixed bug with default values in solve_with_fstpso() method.
 v1.4.8, 21/05/2018 -- Simplified implementation, added new comments for optional arguments.
+v1.5.0, 05/06/2019 -- Introduced support for initial guess in the population. 
+v1.5.1, 31/07/2019 -- Fixed package compatibility with Python 3.
+v1.5.7, 31/07/2019 -- Simplified code structure.
