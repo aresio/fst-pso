@@ -21,3 +21,7 @@ v1.4.8, 21/05/2018 -- Simplified implementation, added new comments for optional
 v1.5.0, 05/06/2019 -- Introduced support for initial guess in the population. 
 v1.5.1, 31/07/2019 -- Fixed package compatibility with Python 3.
 v1.5.7, 31/07/2019 -- Simplified code structure.
+v1.7.0, 24/09/2019 -- Introduced checkpoints and a new termination criterion based on maximum number of iterations without any improvements.
+v1.7.3, 26/09/2019 -- Small patch for termination criterion.
+v1.7.5, 30/09/2019 -- Termination criterion rehauled. Fix for checkpoint filename. Fixed initial population evaluation procedure.
+v1.7.6, 28/10/2019 -- Support for miniful 0.0.6 (faster fuzzy reasoning)
