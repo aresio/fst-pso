@@ -25,3 +25,5 @@ v1.7.0, 24/09/2019 -- Introduced checkpoints and a new termination criterion bas
 v1.7.3, 26/09/2019 -- Small patch for termination criterion.
 v1.7.5, 30/09/2019 -- Termination criterion rehauled. Fix for checkpoint filename. Fixed initial population evaluation procedure.
 v1.7.6, 28/10/2019 -- Support for miniful 0.0.6 (faster fuzzy reasoning)
+v1.7.7, 05/11/2019 -- Removed special character raisin UnicodeEncodeErrors on some machines.
+v1.7.10, 16/02/2020 -- Fixed bug with parallel fitness.
