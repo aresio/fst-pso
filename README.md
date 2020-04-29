@@ -3,7 +3,7 @@
 *Fuzzy Self-Tuning PSO* (FST-PSO) is a swarm intelligence global optimization method [1]
 based on Particle Swarm Optimization [2].
 
-FST-PSO is designed for the optimization of real-valued multi-dimensional multi-modal minimization problems.
+FST-PSO is designed for the optimization of real-valued multi-dimensional minimization problems.
 
 FST-PSO is settings-free version of PSO which exploits fuzzy logic to dynamically assign the functioning parameters to each particle in the swarm. Specifically, during each generation, FST-PSO determines the optimal choice for the cognitive factor, the social factor, the inertia value, the minimum velocity, and the maximum velocity. FST-PSO also uses an heuristics to choose the swarm size, so that the user must not select any functioning setting.
 
