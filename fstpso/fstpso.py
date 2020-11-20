@@ -2,7 +2,8 @@ from __future__ import print_function
 from miniful import *
 import math
 import logging
-from numpy import random, array, linalg, zeros, argmin, argsort
+from numpy import random, array, linalg, zeros, argmin, argsort, exp
+from numpy.random import choice
 import os
 import copy
 import random
@@ -27,6 +28,7 @@ class Particle(object):
 		self.X = []
 		self.V = []
 		self.B = []
+		self.B_discrete = None
 		self.MarkedForRestart = False
 		self.CalculatedFitness = sys.float_info.max
 		self.FitnessDevStandard = sys.float_info.max
@@ -46,6 +48,9 @@ class Particle(object):
 		self.GammaInverter = 1
 
 		self.cannot_move = False
+
+		# used in the case of discrete optimization
+		self._last_discrete_sample = None
 
 	def can_move(self):
 		if self.cannot_move:
@@ -111,9 +116,12 @@ class PSO_new(object):
 		self._used_generation_method = None
 		self._threshold_local_update = 50
 
-		self._checkpoint = None # experimental
+		self._checkpoint = None 
 
-		self.SIMULATOR_PATH = None
+		# for discrete optimization
+		self._best_discrete_sample = None
+
+		#self.SIMULATOR_PATH = None
 		self.ARGUMENTS = None
 		self.COMMUNICATION_FILE = None
 
@@ -166,7 +174,7 @@ class PSO_new(object):
 		logging.info('Launching optimization.')
 
 		if verbose:
-			print ("Process started")
+			print (" * Process started")
 
 		while( not self.TerminationCriterion(verbose=verbose) ):
 			if funz!=None:	funz(self)
@@ -207,13 +215,18 @@ class PSO_new(object):
 					fo.write("\t".join(map(str, self.G.X))+"\n")
 
 		if verbose:
-			print ("Process terminated, best solution found:", self.G.X, "with fitness", self.G.CalculatedFitness)
+			print (" * Optimization process terminated. Best solution found:", self.G.X, "with fitness", self.G.CalculatedFitness)
 
 		logging.info('Best solution: '+str(self.G))
 		logging.info('Fitness of best solution: '+str(self.G.CalculatedFitness))
 
-		return self.G, self.G.CalculatedFitness
+		#print (self._discrete_cases)
+		if self._discrete_cases is None:
+			return self.G, self.G.CalculatedFitness
+		else:
+			return self.G, self.G.CalculatedFitness, self._best_discrete_sample
 		
+
 	def TerminationCriterion(self, verbose=False):
 
 		if verbose:
@@ -223,33 +236,22 @@ class PSO_new(object):
 		if self.StopOnGoodFitness == True:
 			if self.G.CalculatedFitness < self.GoodFitness:
 				if verbose:
-					print ("Optimal fitness reached", self.G.CalculatedFitness)
+					print (" * Optimal fitness was reached", self.G.CalculatedFitness)
 				return True
 
 		if self.SinceLastGlobalUpdate > self.MaxNoUpdateIterations:
 			if verbose:
-				print ("Too many iterations without new global best")
+				print (" * Too many iterations without new global best")
 			return True
 		
 		if self.Iterations >= self.MaxIterations:
 			if verbose:
-				print ("Maximum iterations reached")
+				print (" * Maximum iterations reached")
 			return True
 		else:
 			return False
 
-	"""
-	def set_number_of_particles(self, n):
-		self.NumberOfParticles = n
-		print ("Number of particles set to", n)
-
-	def auto_create_particles(self, dim, use_log):
-		if self.NumberOfParticles == 0:
-			print ("ERROR: it is impossible to autocreate 0 particles")
-			return
-		self.CreateParticles(self.NumberOfParticles, dim, use_log)
-		print ("%d particles autocreated" % self.NumberOfParticles)
-	"""
+	
 
 	def NewGenerate(self, lista, creation_method):
 
@@ -300,9 +302,8 @@ class PSO_new(object):
 				ret.append(v)
 
 		else:
-			print ("Unknown particles initialization mode")
-			exit(20)
-
+			raise Exception("Unknown particles initialization mode")
+			
 		return ret
 
 
@@ -347,13 +348,13 @@ class PSO_new(object):
 		print (" * FST-PSO will now assess the local and global best particles.")
 
 		self.numberofparticles = n
-		#self.NumberOfParticles = n
-
+		
 		if not self.ParallelFitness:
 			self.UpdateCalculatedFitness()		# experimental
 
 		vectorFirstFitnesses = [ x.CalculatedFitness for x in self.Solutions ]
 		self.EstimatedWorstFitness = max(vectorFirstFitnesses)
+		print ( " * Estimated worst fitness: %.3f" % self.EstimatedWorstFitness)
 
 		self.UpdateLocalBest()
 		self.UpdatePositions()	
@@ -364,50 +365,8 @@ class PSO_new(object):
 
 		self._used_generation_method = creation_method
 
-	"""
-	def CreateParticles(self, n, dim, use_log=False):
-
-		self.UseLog = use_log
-
-		if self.FITNESS == None:
-			print ("ERROR: particles must be created AFTER the definition of the fitness function")
-			exit()
-
-		del self.Solutions [:]
-
-		# for all particles
-		for i in range(n):
-
-			p = Particle()
 	
-			p.X = self.Generate( [0]*dim, use_log = use_log )
-			p.B = copy.deepcopy(p.X)
-			p.V = list(zeros(dim))
-
-			self.Solutions.append(p)
-			
-			if len(self.Solutions)==1:
-				self.G = copy.deepcopy(p)
-				self.G.CalculatedFitness = sys.float_info.max
-				self.W = copy.deepcopy(p)
-				self.W.CalculatedFitness = sys.float_info.min
-
-		print (" * %d particles created, verifying local and global best" % n)
-
-		self.NumberOfParticles = n
-
-		self.UpdateCalculatedFitness()		# experimental
-
-		vectorFirstFitnesses = [ x.CalculatedFitness for x in self.Solutions ]
-		self.EstimatedWorstFitness = max(vectorFirstFitnesses)
-
-		self.UpdateLocalBest()
-
-		self.UpdatePositions()
-
-		self.Dimensions = dim
-	"""
-
+	# conventional PSO 
 	def UpdateCalculatedFitness(self):
 		for s in self.Solutions:
 			prev = s.CalculatedFitness
@@ -419,6 +378,7 @@ class PSO_new(object):
 				s.Differential = ret[1]
 			else:
 				s.CalculatedFitness = ret
+
 		
 	def UpdateLocalBest(self, verbose=False, semiverbose=True):		
 
@@ -437,6 +397,10 @@ class PSO_new(object):
 					self.G = copy.deepcopy(self.Solutions[i])
 					if verbose or semiverbose:
 						print (" * New best particle in the swarm is #%d with fitness %f (it: %d)." % (i, self.Solutions[i].CalculatedFitness, self.Iterations))
+
+					if self._discrete_cases is not None:
+						self._best_discrete_sample = self.Solutions[i]._last_discrete_sample
+						
 
 					self.SinceLastGlobalUpdate = 0			
 					self.GIndex = i
@@ -507,6 +471,10 @@ class FuzzyPSO(PSO_new):
 		self.LOW_MAXSP = 0.1
 		self.MEDIUM_MAXSP = 0.15
 		self.HIGH_MAXSP = 0.2
+
+		self._discrete_cases = None
+
+		self._norm_version = "FST-PSO2b"
 
 		""" 
 		self.LOW_GAMMA = -1
@@ -655,14 +623,11 @@ class FuzzyPSO(PSO_new):
 		# first step: check potential errors in FST-PSO's initialization
 		self._check_errors()
 		self._prepare_for_optimization(max_iter, max_iter_without_new_global_best, max_FEs, verbose)
-	
-		
+			
 		self.UseRestart = "reboot" in self.enabled_settings
 		if self.UseRestart:
 			self._threshold_local_update = max(30, int(max_iter/20))
-			if verbose: print (" * Reboots are activated with theta=%d" % self._threshold_local_update)
-		#if "lin_pop_decrease" in self.enabled_settings: self.numberofparticles = self._get_pop_size(0)
-			
+			if verbose: print (" * Reboots are activated with theta=%d" % self._threshold_local_update)		
 
 		if save_checkpoint is not None:
 			self._checkpoint = save_checkpoint
@@ -702,9 +667,11 @@ class FuzzyPSO(PSO_new):
 			Sets the boundaries of the search space.
 
 			Args:
-			limits : 2D list or array, shape = (2, dimensions)
-					 The dimensions of the problem are automatically determined 
-					 according to the length of 'limits'.
+			limits: it can be either a 2D list or 2D array, shape = (dimensions, 2).
+					For instance, if you have D=3 variables in the real interval [-1,1]
+					you can provide the boundaries as: [[-1,1], [-1,1], [-1,1]].
+					The dimensions of the problem are automatically determined 
+					according to the length of 'limits'.
 		"""
 		D = len(limits)
 		self.dimensions = D
@@ -715,15 +682,58 @@ class FuzzyPSO(PSO_new):
 		self.Boundaries = limits		
 		print (" * Search space boundaries set to:", limits)
 
-		self.MaxVelocity = [  math.fabs(B[1]-B[0]) for B in limits ]
-		print (" * Max velocities set to:", self.MaxVelocity)
-
-		self.numberofparticles = int(10 + 2*math.sqrt(D))
-		print (" * Number of particles automatically set to", self.numberofparticles)
+		self._set_maxvelocity()
+		self._set_num_particles()
 
 		logging.info('Search space set (%d dimensions).' % (D))
 
+		
 
+
+	def set_search_space_discrete(self, limits):
+		"""
+			Sets the boundaries of the search space.
+
+			Args:
+			limits: it can be either a list or an array, shape = (dimensions, choices).
+					For instance, if you have D=3 variables such that: the first one
+					can take the discrete values [1,2]; the second one can be [0,2,4];
+					the third one can be [10,100]. Then you can provide the boundaries as: 
+					[[1,2], [0,2,4], [10,100]].
+					The dimensions of the problem are automatically determined 
+					according to the length of 'limits'.
+		"""
+
+		# convert discrete interval into probability distributions
+		D = sum([len(x) for x in limits])
+		self._discrete_cases = limits[:]
+		print (" * Discrete case detected, with the following choices:", self._discrete_cases)
+		limits = [[0,1]]*D
+		self.dimensions = D 
+
+		self.MaxDistance = max_distance=calculate_max_distance(limits)
+		print (" * Max distance: %f" % self.MaxDistance)
+
+		self.Boundaries = limits		
+		print (" * FST-PSO converted the %dD discrete problem to a %dD real valued probabilistic problem." % (len(self._discrete_cases), D))
+		print (" * Search space boundaries automatically set to:", limits)
+
+		self._set_maxvelocity()
+		self._set_num_particles()
+		
+		logging.info('Search space set (%d dimensions).' % (D))
+
+
+	def _set_maxvelocity(self):
+		self.MaxVelocity = [  math.fabs(B[1]-B[0]) for B in self.Boundaries ]
+		print (" * Max velocities set to:", self.MaxVelocity)
+
+
+	def _set_num_particles(self):
+		self.numberofparticles = int(10 + 2*math.sqrt(self.dimensions))
+		print (" * Number of particles automatically set to", self.numberofparticles)
+
+		
 	def set_swarm_size(self, N):
 		"""
 			This (optional) method overrides FST-PSO's heuristic and 
@@ -746,10 +756,50 @@ class FuzzyPSO(PSO_new):
 		logging.info('Swarm size set to %d particles.' % (self.numberofparticles))
 
 
-	def call_fitness(self, data, arguments=None):
-		if self.FITNESS == None:
-			print ("ERROR: fitness function not valid")
-			exit(17)
+	def _dilate(self, X, **args):
+		if args['method']=="sigmoid":
+			z = 1/(1 + exp(-X)) 
+			#print(list(zip(X,z)))
+			return z
+		elif args['method']=='smoothramp':
+			z = 1-1/(1+(X*2)**args['alpha'])
+			#print(list(zip(X,z)))
+			return z
+		else:
+			raise Exception("Dilation method unknown (%s)" % method)
+
+
+	def _convert_prob_to_particle(self, data):
+		"""
+			Generates a valid solution for the discrete optimization problem
+			using the probability distributions encoded by data.
+		"""
+		original_D = len(self._discrete_cases)
+		loc = 0
+		sample = []
+		for d in range(original_D):
+			cases = len(self._discrete_cases[d])
+			pseudoprob = array(data[loc:loc+cases])
+			pseudoprob = self._dilate(pseudoprob, method="smoothramp", alpha=8)
+			if pseudoprob.sum()==0:	print("WARNING: probabilities are all zero")
+			distribution = pseudoprob/pseudoprob.sum()
+			sample.append(choice(self._discrete_cases[d], p= distribution))
+			loc+=cases
+		return sample
+
+
+	def call_fitness(self, particle, arguments=None):
+		if self.FITNESS == None: raise Exception("ERROR: fitness function not valid")
+
+		data = particle.X
+
+		# in the discrete case, use the particle as probability distribution
+		# and generate a new individual according to that. Store the generated structure
+		# in order to return it later if the fitness is optimal.
+		if self._discrete_cases is not None:
+			data = self._convert_prob_to_particle(data)
+			particle._last_discrete_sample = data
+						
 		if arguments==None:	return self.FITNESS(data)
 		else:				return self.FITNESS(data, arguments)
 
@@ -812,16 +862,34 @@ class FuzzyPSO(PSO_new):
 		print (" * Test successful")
 
 
-	def phi(self, f_w, f_o, f_n, phi, phi_max):
+	def phi(self, f_w, f_o, f_n, move, move_max):
 		""" 
 			Calculates the Fitness Incremental Factor (phi).
-		"""
 
-		if phi == 0:
-			return 0
-		denom = (min(f_w, f_n) - min(f_w, f_o))/f_w			# 0..1
-		numer = phi/phi_max									# 0..1		
-		return denom*numer
+			Arguments: 
+				f_w = estimated worst fitness
+				f_o = previous fitness
+				f_n = new fitness
+				move = magnitude movement
+				move_max = maximum distance
+		"""
+		if move == 0: return 0  # we did not move
+
+		left = move/move_max		
+		if self._norm_version=="FST-PSO1":
+			#right = (min(f_w, f_n) - min(f_w, f_o))/f_w
+			right = (min(f_w, f_n) - min(f_w, f_o))/abs(f_w)		
+		elif self._norm_version=="FST-PSO2a":
+			if self.G.CalculatedFitness>0:
+				right = (min(f_w, f_n) - min(f_w, f_o))/abs(f_w)		
+			else:
+				right = (min(f_w, f_n) - min(f_w, f_o))/abs(f_w-self.G.CalculatedFitness)
+		elif self._norm_version=="FST-PSO2b":
+			right = (min(f_w, f_n) - min(f_w, f_o))/abs(f_w-self.G.CalculatedFitness)		
+		else:
+			raise NotImplementedError()
+			
+		return left*right
 
 
 	def CreateFuzzyReasoner(self, max_delta):
@@ -904,14 +972,14 @@ class FuzzyPSO(PSO_new):
 		"""
 
 		if self.ParallelFitness:
-			#print " * Distributing calculations..."
+			if self._discrete_cases is not None: raise NotImplementedError() # TODO
 			ripop = list(map(lambda x: x.X, self.Solutions))
+			# TODO: make parallel version of discrete case
 			all_fitness = self.FITNESS(ripop, self._FITNESS_ARGS)
 		else:
 			all_fitness = []
 			for s in self.Solutions:
-				# all_fitness.append( self.FITNESS(s.X, self._FITNESS_ARGS ) )
-				all_fitness.append( self.call_fitness(s.X, self._FITNESS_ARGS ) )
+				all_fitness.append( self.call_fitness(s, self._FITNESS_ARGS ) )
 
 
 		fr_cogn = "cognitive" 	in self.enabled_settings
@@ -919,7 +987,6 @@ class FuzzyPSO(PSO_new):
 		fr_iner = "inertia" 	in self.enabled_settings
 		fr_maxv = "maxvelocity" in self.enabled_settings
 		fr_minv = "minvelocity" in self.enabled_settings
-		#fr_gamm = "gamma" 		in self.enabled_settings
 
 
 		# for each i-th individual "s"...
