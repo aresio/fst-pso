@@ -785,8 +785,6 @@ class FuzzyPSO(PSO_new):
 			if use_dilation: 
 				distribution = self._dilate(distribution, method="smoothramp", alpha=8)
 
-			print (distribution)
-
 			sample.append(choice(self._discrete_cases[d], p= distribution))
 			loc+=cases
 		return sample
