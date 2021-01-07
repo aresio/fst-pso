@@ -1,4 +1,3 @@
-from __future__ import print_function
 from miniful import *
 import math
 import logging
@@ -13,13 +12,6 @@ import subprocess
 import pickle
 from copy import deepcopy
 from .fstpso_checkpoints import Checkpoint
-
-try:
-	# Python 2
-	range = xrange
-except NameError:
-	# Python 3
-	pass
 
 
 class Particle(object):
@@ -769,7 +761,7 @@ class FuzzyPSO(PSO_new):
 			raise Exception("Dilation method unknown (%s)" % method)
 
 
-	def _convert_prob_to_particle(self, data):
+	def _convert_prob_to_particle(self, data, use_dilation=False):
 		"""
 			Generates a valid solution for the discrete optimization problem
 			using the probability distributions encoded by data.
@@ -780,9 +772,21 @@ class FuzzyPSO(PSO_new):
 		for d in range(original_D):
 			cases = len(self._discrete_cases[d])
 			pseudoprob = array(data[loc:loc+cases])
-			pseudoprob = self._dilate(pseudoprob, method="smoothramp", alpha=8)
-			if pseudoprob.sum()==0:	print("WARNING: probabilities are all zero")
-			distribution = pseudoprob/pseudoprob.sum()
+
+			# check for probabilities all equal to zero
+			if pseudoprob.sum()==0:	
+				print("WARNING: probabilities are all zero")
+				distribution = [1/D for _ in range(D)]
+			else: 
+				# normalize probabilities
+				distribution = pseudoprob/pseudoprob.sum()
+
+			# make distribution more extreme
+			if use_dilation: 
+				distribution = self._dilate(distribution, method="smoothramp", alpha=8)
+
+			print (distribution)
+
 			sample.append(choice(self._discrete_cases[d], p= distribution))
 			loc+=cases
 		return sample
