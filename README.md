@@ -25,8 +25,8 @@ FST-PSO can be used as follows:
 		FP.set_search_space( [[-10, 10]]*dims )	
 		FP.set_fitness(example_fitness)
 		result =  FP.solve_with_fstpso()
-		print "Best solution:", result[0]
-		print "Whose fitness is:", result[1]
+		print("Best solution:", result[0])
+		print("Whose fitness is:", result[1])
 
 
 ## Further information
