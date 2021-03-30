@@ -28,6 +28,10 @@ FST-PSO can be used as follows:
 		print("Best solution:", result[0])
 		print("Whose fitness is:", result[1])
 
+## Installing FST-PSO
+
+`pip install fst-pso`
+
 
 ## Further information
 
