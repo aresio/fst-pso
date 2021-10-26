@@ -341,8 +341,8 @@ class PSO_new(object):
 
 		self.numberofparticles = n
 		
-		if not self.ParallelFitness:
-			self.UpdateCalculatedFitness()		# experimental
+		# if not self.ParallelFitness:
+		self.UpdateCalculatedFitness()		# experimental
 
 		vectorFirstFitnesses = [ x.CalculatedFitness for x in self.Solutions ]
 		self.EstimatedWorstFitness = max(vectorFirstFitnesses)
@@ -791,6 +791,7 @@ class FuzzyPSO(PSO_new):
 
 
 	def call_fitness(self, particle, arguments=None):
+		
 		if self.FITNESS == None: raise Exception("ERROR: fitness function not valid")
 
 		data = particle.X
@@ -843,7 +844,7 @@ class FuzzyPSO(PSO_new):
 
 
 
-	def set_parallel_fitness(self, fitness, arguments=None, skip_test=False):
+	def set_parallel_fitness(self, fitness, arguments=None, skip_test=True):
 		print ( " * Parallel fitness requested")
 		if skip_test:
 			self.FITNESS = fitness
@@ -973,11 +974,24 @@ class FuzzyPSO(PSO_new):
 			and then update the settings of each particle.
 		"""
 
+		# parallel evaluation
 		if self.ParallelFitness:
-			if self._discrete_cases is not None: raise NotImplementedError() # TODO
+
 			ripop = list(map(lambda x: x.X, self.Solutions))
+
+			if self._discrete_cases is not None: 
+
+				ripop = [self._convert_prob_to_particle(data) for data in ripop]
+				for particle, instance in zip(self.Solutions, ripop):
+					particle._last_discrete_sample = instance
+
 			# TODO: make parallel version of discrete case
-			all_fitness = self.FITNESS(ripop, self._FITNESS_ARGS)
+			if self._FITNESS_ARGS is not None:
+				all_fitness = self.FITNESS(ripop, self._FITNESS_ARGS)
+			else:
+				all_fitness = self.FITNESS(ripop)
+
+		# sequential evaluation
 		else:
 			all_fitness = []
 			for s in self.Solutions:
