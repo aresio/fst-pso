@@ -119,7 +119,7 @@ if __name__ == '__main__':
 	
 	FSTPSO = FuzzyPSO()
 	FSTPSO.set_search_space([[-5,5]]*dimensions)
-	FSTPSO.set_parallel_fitness(f, arguments={'x': data.data, 'y': data.target })
+	FSTPSO.set_parallel_fitness(f, arguments={'x': data.data, 'y': data.target }, skip_test=True)
 	FSTPSO.set_swarm_size(100)
 	bestpos, bestf = FSTPSO.solve_with_fstpso(max_iter=1000)
 	accuracy = (predict(data.data, np.array(bestpos.X))==data.target).mean()
