@@ -3,11 +3,11 @@
 *Fuzzy Self-Tuning PSO* (FST-PSO) is a swarm intelligence global optimization method [1]
 based on Particle Swarm Optimization [2].
 
-FST-PSO is designed for the optimization of real-valued multi-dimensional multi-modal minimization problems.
+FST-PSO is designed for the optimization of real- or discrete-valued multi-dimensional minimization problems.
 
 FST-PSO is settings-free version of PSO which exploits fuzzy logic to dynamically assign the functioning parameters to each particle in the swarm. Specifically, during each generation, FST-PSO determines the optimal choice for the cognitive factor, the social factor, the inertia value, the minimum velocity, and the maximum velocity. FST-PSO also uses an heuristics to choose the swarm size, so that the user must not select any functioning setting.
 
-In order to use FST-PSO, the programmer must implement a custom fitness function and specify the boundaries of the search space for each dimension. The programmer can optionally specify the maximum number of iterations and the swarm size. When the stopping criterion is met, FST-PSO returns the best fitting solution found, along with its fitness value.
+In order to use FST-PSO, the programmer must implement a custom fitness function and specify the boundaries of the search space for each dimension. The programmer can optionally specify the maximum number of iterations and the swarm size. When the stopping criterion is met, FST-PSO returns the best fitting solution found, along with its fitness value. In the case of discrete problems, FST-PSO also returns the probability distributions of the underlying generative model.
 
 
 ## Example
@@ -25,8 +25,8 @@ FST-PSO can be used as follows:
 		FP.set_search_space( [[-10, 10]]*dims )	
 		FP.set_fitness(example_fitness)
 		result =  FP.solve_with_fstpso()
-		print "Best solution:", result[0]
-		print "Whose fitness is:", result[1]
+		print("Best solution:", result[0])
+		print("Whose fitness is:", result[1])
 
 
 ## Further information
