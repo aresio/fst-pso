@@ -52,7 +52,7 @@ re-initialized.
 
 FFT-PSO can be used as follows:
 
-	from fftpso import FFTPSO	
+	from fstpso import FFTPSO	
 	
 	def example_fitness( particle ):
 		return sum(map(lambda x: x**2, particle))
