@@ -74,7 +74,7 @@ of Bergamo, Italy). The source code is written and maintained by M.S. Nobile.
 
 Please check out the Wiki for additional descriptions. 
 
-If you need any information about FST-PSO please write to: nobile@disco.unimib.it
+If you need any information about FST-PSO please write to: marco.nobile@unive.it
 
 FST-PSO requires two packages: miniful and numpy. 
 
