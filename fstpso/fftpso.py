@@ -20,6 +20,9 @@ class FFTPSO(FuzzyPSO):
         self.alpha = self.maximum_integer
         self.alpha_factor = alpha
 
+    def _print_banner(self):
+        print ("Fuzzy Time PSO 1.0")
+
     def Solve(self,
               funz,
               verbose=False,
