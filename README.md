@@ -59,7 +59,7 @@ FFT-PSO can be used as follows:
 		
 	if __name__ == '__main__':
 		dims = 10
-		FP = FFTPSO(alpha=0.01)
+		FP = FFTPSO()
 		FP.set_search_space( [[-10, 10]]*dims )	
 		FP.set_fitness(example_fitness)
 		result =  FP.solve_with_fstpso(max_iter=200)
