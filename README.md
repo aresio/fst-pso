@@ -36,7 +36,7 @@ FST-PSO can be used as follows:
 
 *Fuzzy Time Travel PSO* (FFT-PSO) is a variant of FST-PSO that explores different optimization scenarios
 starting from the same initial population where only the particle that lead to the best solution found
-is randomly changed [3]
+is randomly changed [3].
 
 FFT-PSO works under the assumption that premature convergence could be prevented by backtracking to the 
 beginning of an optimization and removing the particle that was ultimately responsible for leading 
