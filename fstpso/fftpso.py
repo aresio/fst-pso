@@ -7,7 +7,15 @@ from fstpso import FuzzyPSO
 
 class FFTPSO(FuzzyPSO):
 
-    def __init__(self, alpha=0.01, logfile=None):
+    def __init__(self, alpha=0.01, time_travel_type="kill_best_in_past", logfile=None):
+        """ 
+            Supported time travels:
+            - kill_best_in_past
+            - best_from_future
+            - opposite_twin
+
+            Alpha is a multiplier of the number of iterations, and determines the sensitivity of the time travel triggering.
+        """
         super(FFTPSO, self).__init__(logfile=logfile)
 
         self.rollback_swarm = None
@@ -19,6 +27,7 @@ class FFTPSO(FuzzyPSO):
             self.maximum_integer = sys.maxsize
         self.alpha = self.maximum_integer
         self.alpha_factor = alpha
+        self._time_travel_type = time_travel_type
 
     def _print_banner(self):
         print ("Fuzzy Time PSO 1.0")
@@ -44,7 +53,12 @@ class FFTPSO(FuzzyPSO):
                 funz(self)
 
             self.Iterate(verbose)
-            self.rewind_swarm(verbose)
+
+
+            # if the last global update was more than alpha (=alpha factor * maxiterations) iterations ago, 
+            # trigger the time travel (rewind_swarm).
+            if self.SinceLastGlobalUpdate >= self.alpha:
+                self.rewind_swarm(verbose)
 
             if verbose:
                 print(f"Completed iteration {self.Iterations}")
@@ -106,7 +120,7 @@ class FFTPSO(FuzzyPSO):
         else:
             raise ValueError
         if verbose:
-            print(f"* alpha is set to {self.alpha} iterations")
+            print(f" * alpha is set to {self.alpha} iterations")
 
     def update_rollback_swarm(self, verbose):
         self.rollback_swarm = []
@@ -116,24 +130,43 @@ class FFTPSO(FuzzyPSO):
             print("Rollback swarm is updated")
 
     def rewind_swarm(self, verbose):
-        if self.SinceLastGlobalUpdate >= self.alpha:
-            print(" * Rewinding the swarm at the intial state")
-            self.SinceLastGlobalUpdate = 0
-            self.Solutions = []
-            for p in self.rollback_swarm:
-                self.Solutions.append(copy.deepcopy(p))
 
-            self.Solutions[self.GIndex].X = self.NewGenerate([0] * len(self.Boundaries),
-                                                             creation_method={'name': "uniform"})
-            self.Solutions[self.GIndex].B = copy.deepcopy(self.Solutions[self.GIndex].X)
-            self.Solutions[self.GIndex].V = list(np.zeros(len(self.Boundaries)))
-            self.Solutions[self.GIndex].CalculatedFitness = self.maximum_integer
+        print(" * Rewinding the swarm at the intial state")
+        self.SinceLastGlobalUpdate = 0
+        self.Solutions = []
+        for p in self.rollback_swarm:
+            self.Solutions.append(copy.deepcopy(p))
 
-            self.determine_G()
-            self.update_rollback_swarm(verbose=verbose)
+        if self._time_travel_type=="kill_best_in_past":
+            self.Solutions[self.GIndex].X = self.NewGenerate([0] * len(self.Boundaries), creation_method={'name': "uniform"})
+        elif self._time_travel_type=="best_from_future":
+            self.Solutions[self.GIndex].X = self.G.X
+        elif self._time_travel_type=="opposite_twin":
+            self.Solutions[self.GIndex].X = self.calculate_opposite_solution(self.Solutions[self.GIndex])
+        else:
+            raise Exception("Time travel type not supported, aborting.")
+
+        self.Solutions[self.GIndex].B = copy.deepcopy(self.Solutions[self.GIndex].X)
+        self.Solutions[self.GIndex].V = list(np.zeros(len(self.Boundaries)))
+        self.Solutions[self.GIndex].CalculatedFitness = self.maximum_integer
+
+        self.determine_G()
+        self.update_rollback_swarm(verbose=verbose)
 
     def determine_G(self):
         particles_fs = [(i, self.Solutions[i].CalculatedFitness) for i in range(len(self.Solutions))]
         particles_fs = sorted(particles_fs, key=lambda x: x[1])
         self.GIndex = particles_fs[0][0]
         self.G = copy.deepcopy(self.Solutions[self.GIndex])
+
+
+    def calculate_opposite_solution(self, particle):
+        x_old = particle.X 
+        origin = [ (x[1]+x[0])/2 for x in self.Boundaries ]
+        x_new = [a-b for a, b in zip(origin, x_old)]
+        
+        random_coord = int(np.random.randint(0, self.Dimensions))
+        x_new[random_coord] = float(np.random.uniform(self.Boundaries[random_coord][0], self.Boundaries[random_coord][1]))
+        
+        return x_new 
+
